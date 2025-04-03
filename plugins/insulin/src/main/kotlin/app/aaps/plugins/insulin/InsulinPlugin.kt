@@ -109,7 +109,7 @@ class InsulinPlugin @Inject constructor(
     override val iCfg: ICfg
         get() {
             val profile = profileFunction.getProfile()
-            return profile?.insulin ?:insulins[defaultInsulinIndex]
+            return profile?.iCfg() ?:insulins[defaultInsulinIndex]
         }
 
     lateinit var currentInsulin: ICfg

@@ -62,7 +62,7 @@ fun TB.iobCalc(time: Long, profile: Profile, insulinInterface: Insulin): IobTota
     var netBasalAmount = 0.0
     if (realDuration > 0) {
         var netBasalRate: Double
-        val iCfg = profile.insulin
+        val iCfg = profile.iCfg()
         val diaAgo = time - iCfg.insulinEndTime
         val aboutFiveMinIntervals = ceil(realDuration / 5.0).toInt()
         val tempBolusSpacing = realDuration / aboutFiveMinIntervals.toDouble()
@@ -120,7 +120,7 @@ fun TB.iobCalc(
     }
     if (realDuration > 0) {
         var netBasalRate: Double
-        val iCfg = profile.insulin
+        val iCfg = profile.iCfg()
         val diaAgo = time - iCfg.insulinEndTime
         val aboutFiveMinIntervals = ceil(realDuration / 5.0).toInt()
         val tempBolusSpacing = realDuration / aboutFiveMinIntervals.toDouble()

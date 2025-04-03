@@ -47,7 +47,7 @@ fun EB.iobCalc(time: Long, profile: Profile, insulinInterface: Insulin): IobTota
     val result = IobTotal(time)
     val realDuration = getPassedDurationToTimeInMinutes(time)
     if (realDuration > 0) {
-        val iCfg = profile.insulin
+        val iCfg = profile.iCfg()
         val diaAgo = time - iCfg.insulinEndTime
         val aboutFiveMinIntervals = ceil(realDuration / 5.0).toInt()
         val spacing = realDuration / aboutFiveMinIntervals.toDouble()
@@ -93,7 +93,7 @@ fun EB.iobCalc(
     }
     if (realDuration > 0) {
         var netBasalRate: Double
-        val iCfg = profile.insulin
+        val iCfg = profile.iCfg()
         val diaAgo = time - iCfg.insulinEndTime
         val aboutFiveMinIntervals = ceil(realDuration / 5.0).toInt()
         val spacing = realDuration / aboutFiveMinIntervals

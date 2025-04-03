@@ -37,7 +37,7 @@ interface Profile {
     /**
      * InsulinProfile
      */
-    val insulin: ICfg
+    fun iCfg(): ICfg
 
     val percentage: Int
 

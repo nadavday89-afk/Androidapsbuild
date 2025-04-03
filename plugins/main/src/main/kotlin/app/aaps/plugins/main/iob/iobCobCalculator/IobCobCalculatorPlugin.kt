@@ -515,7 +515,7 @@ class IobCobCalculatorPlugin @Inject constructor(
     private fun calculateIobFromBolusToTime(toTime: Long): IobTotal {
         val total = IobTotal(toTime)
         val profile = profileFunction.getProfile() ?: return total
-        val iCfg = profile.insulin
+        val iCfg = profile.iCfg()
         val divisor = preferences.get(DoubleKey.ApsAmaBolusSnoozeDivisor)
         assert(divisor > 0)
 
@@ -580,7 +580,7 @@ class IobCobCalculatorPlugin @Inject constructor(
                 type = BS.Type.NORMAL,
                 isBasalInsulin = true
             )
-            val iob = bolus.iobCalc(activePlugin, toTime, profile.insulin)
+            val iob = bolus.iobCalc(activePlugin, toTime, profile.iCfg())
             total.basaliob += iob.iobContrib
             total.activity += iob.activityContrib
             i += T.mins(5).msecs()
