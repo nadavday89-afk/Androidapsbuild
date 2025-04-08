@@ -97,25 +97,26 @@ class InsulinPlugin @Inject constructor(
             }
         }
 
-    override fun setDefault(defaultICfg: ICfg) {
-        insulins.forEachIndexed { index, iCfg ->
-            if (iCfg.isEqual(defaultICfg)) {
-                defaultInsulinIndex = index
-                currentInsulinIndex = defaultInsulinIndex
-            }
-        }
-    }
-
     override val iCfg: ICfg
         get() {
             val profile = profileFunction.getProfile()
-            return profile?.iCfg() ?:insulins[defaultInsulinIndex]
+            return profile?.iCfg() ?:insulins[0]
         }
 
     lateinit var currentInsulin: ICfg
     private var lastWarned: Long = 0
     var insulins: ArrayList<ICfg> = ArrayList()
-    var defaultInsulinIndex = 0
+    val defaultInsulinIndex: Int
+        get() {
+            iCfg.let {
+                insulins.forEachIndexed { index, iCfg ->
+                    if (iCfg.isEqual(it)) {
+                        return index
+                    }
+                }
+            }
+            return 0
+        }
     var currentInsulinIndex = 0
     val numOfInsulins get() = insulins.size
     var isEdited: Boolean = false
@@ -215,8 +216,6 @@ class InsulinPlugin @Inject constructor(
         val insulinRemoved = currentInsulin().insulinLabel
         insulins.removeAt(currentInsulinIndex)
         uel.log(Action.INSULIN_REMOVED, Sources.Insulin, value = ValueWithUnit.SimpleString(insulinRemoved))
-        if (currentInsulinIndex < defaultInsulinIndex)
-            defaultInsulinIndex--
         currentInsulinIndex = defaultInsulinIndex
         currentInsulin = currentInsulin().deepClone()
         storeSettings()
@@ -323,7 +322,6 @@ class InsulinPlugin @Inject constructor(
             }
         }
         json.put("insulins", jsonArray)
-        json.put("default_insulin", defaultInsulinIndex)
         json.put("current_insulin", currentInsulinIndex)
         return json
     }
@@ -341,7 +339,6 @@ class InsulinPlugin @Inject constructor(
                 }
             }
         }
-        defaultInsulinIndex = configuration.optInt("default_insulin")
         currentInsulinIndex = configuration.optInt("current_insulin")
     }
 

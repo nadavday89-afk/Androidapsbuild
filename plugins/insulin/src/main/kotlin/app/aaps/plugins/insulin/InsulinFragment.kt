@@ -85,6 +85,7 @@ class InsulinFragment : DaggerFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         profileStore = activePlugin.activeProfileSource.profile ?: instantiator.provideProfileStore(JSONObject())
+        checkInsulinList()
         binding.recyclerview.setHasFixedSize(true)
         binding.recyclerview.layoutManager = LinearLayoutManager(context)
         binding.insulinList.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
@@ -113,7 +114,6 @@ class InsulinFragment : DaggerFragment() {
                 ICfg("", selectedTemplate.peak, selectedTemplate.dia)
             )
         }
-        insulinPlugin.setDefault(insulinPlugin.iCfg)
         insulinPlugin.setCurrent(insulinPlugin.iCfg)
         swapAdapter()
 
@@ -139,10 +139,11 @@ class InsulinFragment : DaggerFragment() {
             if (insulinPlugin.isEdited) {
                 activity?.let { OKDialog.show(it, "", rh.gs(R.string.save_or_reset_changes_first)) }
             } else {
+                selectedTemplate = Insulin.InsulinType.fromPeak(insulinPlugin.iCfg.insulinPeakTime)
                 insulinPlugin.addNewInsulin(
                     ICfg(
-                        insulinLabel = "",              // Let plugin propose a new unique name from template
-                        peak = selectedTemplate.peak,
+                        insulinLabel = "",                      // Let plugin propose a new unique name from template
+                        peak = insulinPlugin.iCfg.getPeak(),    // Current default insulin is default peak for new insulins
                         dia = selectedTemplate.dia
                     )
                 )
@@ -303,6 +304,14 @@ class InsulinFragment : DaggerFragment() {
             profileList.add(0, rh.gs(app.aaps.core.ui.R.string.active))
         binding.tabLayout.getTabAt(1)?.text = rh.gs(app.aaps.core.ui.R.string.profile_number, profileList.size)
         binding.recyclerview.swapAdapter(RecyclerViewAdapter(profileList), true)
+    }
+
+    private fun checkInsulinList() {
+        profileStore.getProfileList().forEach { profileName ->
+            profileStore.getSpecificProfile(profileName.toString())?.let {
+                insulinPlugin.getOrCreateInsulin(it.iCfg)
+            }
+        }
     }
 
     inner class RecyclerViewAdapter internal constructor(private var profileList: List<String>) : RecyclerView.Adapter<RecyclerViewAdapter.ProfileViewHolder>() {

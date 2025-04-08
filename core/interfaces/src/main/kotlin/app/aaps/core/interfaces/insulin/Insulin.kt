@@ -32,7 +32,6 @@ interface Insulin : ConfigExportImport {
     val friendlyName: String
     val dia: Double
     val peak: Int
-    fun setDefault(iCfg: ICfg)
     fun insulinList() = ArrayList<CharSequence>()
     fun getOrCreateInsulin(iCfg: ICfg): ICfg
     fun getInsulin(insulinLabel: String): ICfg
