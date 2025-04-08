@@ -97,9 +97,9 @@ class InsulinPlugin @Inject constructor(
             }
         }
 
-    override fun setDefault(iCfg: ICfg) {
+    override fun setDefault(defaultICfg: ICfg) {
         insulins.forEachIndexed { index, iCfg ->
-            if (iCfg.isEqual(iCfg)) {
+            if (iCfg.isEqual(defaultICfg)) {
                 defaultInsulinIndex = index
                 currentInsulinIndex = defaultInsulinIndex
             }
@@ -147,7 +147,7 @@ class InsulinPlugin @Inject constructor(
                 return it
                 }
         }
-        return addNewInsulin(iCfg, true)
+        return addNewInsulin(iCfg)
     }
 
     fun setCurrent(iCfg: ICfg): Int {
@@ -159,7 +159,7 @@ class InsulinPlugin @Inject constructor(
                 return index
             }
         }
-        addNewInsulin(iCfg, true)
+        addNewInsulin(iCfg)
         currentInsulin = currentInsulin().deepClone()
         return insulins.size - 1
     }
@@ -194,8 +194,8 @@ class InsulinPlugin @Inject constructor(
 
 
     @Synchronized
-    fun addNewInsulin(template: ICfg, autoName: Boolean = false): ICfg {
-        if (autoName)
+    fun addNewInsulin(template: ICfg): ICfg {
+        if (template.insulinLabel == "" || insulinLabelAlreadyExists(template.insulinLabel))
             template.insulinLabel = createNewInsulinLabel(template)
         val newInsulin = template.deepClone()
         insulins.add(newInsulin)
@@ -222,21 +222,32 @@ class InsulinPlugin @Inject constructor(
         storeSettings()
     }
 
-    fun createNewInsulinLabel(iCfg: ICfg, includingCurrent: Boolean = true): String {
+    fun createNewInsulinLabel(iCfg: ICfg, currentIndex: Int = -1): String {
         val template = Insulin.InsulinType.fromPeak(iCfg.insulinPeakTime)
         var insulinLabel = when (template) {
             Insulin.InsulinType.OREF_FREE_PEAK -> "${rh.gs(template.label)}_${iCfg.getPeak()}_${iCfg.getDia()}"
             else                               -> "${rh.gs(template.label)}_${iCfg.getDia()}"
         }
-        if (insulinLabelAlreadyExists(insulinLabel, if (includingCurrent) 10000  else currentInsulinIndex)) {
+        if (insulinLabelAlreadyExists(insulinLabel, currentIndex)) {
             for (i in 1..10000) {
-                if (!insulinLabelAlreadyExists("${insulinLabel}_$i", if (includingCurrent) 10000  else currentInsulinIndex)) {
+                if (!insulinLabelAlreadyExists("${insulinLabel}_$i", currentIndex)) {
                     insulinLabel = "${insulinLabel}_$i"
                     break
                 }
             }
         }
         return insulinLabel
+    }
+
+    private fun insulinLabelAlreadyExists(insulinLabel: String, currentIndex: Int = -1): Boolean {
+        insulins.forEachIndexed { index, insulin ->
+            if (index != currentIndex) {
+                if (insulin.insulinLabel == insulinLabel) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     @Synchronized
@@ -370,17 +381,6 @@ class InsulinPlugin @Inject constructor(
             }
         }
         return true
-    }
-
-    private fun insulinLabelAlreadyExists(insulinLabel: String, currentIndex: Int): Boolean {
-        insulins.forEachIndexed { index, insulin ->
-            if (index != currentIndex) {
-                if (insulin.insulinLabel == insulinLabel) {
-                    return true
-                }
-            }
-        }
-        return false
     }
 
     fun currentInsulin(): ICfg = insulins[currentInsulinIndex]

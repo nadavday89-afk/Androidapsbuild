@@ -110,8 +110,7 @@ class InsulinFragment : DaggerFragment() {
         }
         if (insulinPlugin.numOfInsulins == 0) {
             insulinPlugin.addNewInsulin(
-                ICfg("", selectedTemplate.peak, selectedTemplate.dia),
-                autoName = true
+                ICfg("", selectedTemplate.peak, selectedTemplate.dia)
             )
         }
         insulinPlugin.setDefault(insulinPlugin.iCfg)
@@ -175,7 +174,7 @@ class InsulinFragment : DaggerFragment() {
             }
             uel.log(
                 action = Action.STORE_INSULIN, source = Sources.Insulin,
-                value = ValueWithUnit.SimpleString(insulinPlugin.currentInsulin().insulinLabel)
+                value = ValueWithUnit.SimpleString(insulinPlugin.currentInsulin.insulinLabel)
             )
             if (profileList.isEmpty()) {
                 insulinPlugin.insulins[insulinPlugin.currentInsulinIndex] = currentInsulin
@@ -198,7 +197,7 @@ class InsulinFragment : DaggerFragment() {
             }
         }
         binding.autoName.setOnClickListener {
-            binding.name.setText(insulinPlugin.createNewInsulinLabel(currentInsulin, includingCurrent = false))
+            binding.name.setText(insulinPlugin.createNewInsulinLabel(currentInsulin, insulinPlugin.currentInsulinIndex))
             insulinPlugin.isEdited = true
             build()
         }
