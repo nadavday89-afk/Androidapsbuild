@@ -100,7 +100,7 @@ class InsulinPlugin @Inject constructor(
     override val iCfg: ICfg
         get() {
             val profile = profileFunction.getProfile()
-            return profile?.iCfg() ?:insulins[0]
+            return profile?.iCfg() ?: insulins[0]
         }
 
     lateinit var currentInsulin: ICfg
@@ -124,7 +124,7 @@ class InsulinPlugin @Inject constructor(
         get() = iCfg.getDia()
 
     val userDefinedPeak: Int
-        get() =iCfg.getPeak()
+        get() = iCfg.getPeak()
 
     override fun onStart() {
         super.onStart()
@@ -140,13 +140,13 @@ class InsulinPlugin @Inject constructor(
     override fun getOrCreateInsulin(iCfg: ICfg): ICfg {
         // First Check insulin with hardlimits, and set default value if not consistent
         if (iCfg.getPeak() < hardLimits.minPeak() || iCfg.getPeak() > hardLimits.maxPeak())
-            iCfg.insulinPeakTime = insulins[defaultInsulinIndex].insulinPeakTime
+            iCfg.setPeak(if (numOfInsulins == 0) Insulin.InsulinType.OREF_RAPID_ACTING.peak else insulins[defaultInsulinIndex].getPeak())
         if (iCfg.getDia() < hardLimits.minDia() || iCfg.getDia() > hardLimits.maxDia())
-            iCfg.insulinEndTime = insulins[defaultInsulinIndex].insulinEndTime
+            iCfg.setDia(if (numOfInsulins == 0) Insulin.InsulinType.OREF_RAPID_ACTING.dia else insulins[defaultInsulinIndex].getDia())
         insulins.forEachIndexed { index, it ->
             if (iCfg.isEqual(it)) {
                 return it
-                }
+            }
         }
         return addNewInsulin(iCfg)
     }
@@ -190,9 +190,9 @@ class InsulinPlugin @Inject constructor(
             uiInteraction.addNotification(Notification.SHORT_DIA, String.format(notificationPattern, dia, hardLimits.minDia()), Notification.URGENT)
         }
     }
+
     private val notificationPattern: String
         get() = rh.gs(R.string.dia_too_short)
-
 
     @Synchronized
     fun addNewInsulin(template: ICfg): ICfg {
@@ -339,7 +339,8 @@ class InsulinPlugin @Inject constructor(
                 }
             }
         }
-        currentInsulinIndex = configuration.optInt("current_insulin")
+        if (insulins.isEmpty())
+            currentInsulinIndex = configuration.optInt("current_insulin")
     }
 
     @Synchronized
