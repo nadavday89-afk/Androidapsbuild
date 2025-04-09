@@ -262,6 +262,7 @@ class InsulinFragment : DaggerFragment() {
     }
 
     fun build() {
+        selectedTemplate = Insulin.InsulinType.fromPeak(insulinPlugin.currentInsulin().insulinPeakTime)
         binding.insulinTemplate.setText(rh.gs(Insulin.InsulinType.fromPeak(currentInsulin.insulinPeakTime).label), false)
         binding.name.removeTextChangedListener(textWatch)
         binding.name.setText(currentInsulin.insulinLabel)
