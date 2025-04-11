@@ -12,6 +12,7 @@
     <!-- Omnipod Dash - Overview -->
     <string name="omnipod_dash_overview_bluetooth_status">Stato bluetooth</string>
     <string name="omnipod_dash_overview_bluetooth_address">Indirizzo bluetooth</string>
+    <string name="omnipod_dash_overview_firmware_version_value">Firmware %1$s / Bluetooth %2$s</string>
     <string name="omnipod_dash_overview_bluetooth_connection_quality">Qualità connessione</string>
     <string name="omnipod_dash_overview_delivery_status">Stato erogazione</string>
     <!-- Omnipod Dash - Pod Activation Wizard -->
@@ -28,6 +29,7 @@
     <string name="omnipod_dash_command_not_received_by_the_pod">Comando non ricevuto dal pod</string>
     <string name="omnipod_dash_unknown">Stato sconosciuto per il comando</string>
     <string name="omnipod_common_history_tbr_value">%1$.2f U/h, %2$d minuti</string>
+    <string name="omnipod_common_history_bolus_value">%1$.2f U</string>
     <string name="omnipod_common_alert_delivery_suspended">L\'erogazione di insulina è sospesa</string>
     <string name="omnipod_common_history_total_delivered">Totale erogato: %1$.2f U</string>
     <string name="omnipod_dash_connection_lost">Connessione col pod persa</string>
