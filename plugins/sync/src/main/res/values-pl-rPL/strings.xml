@@ -36,7 +36,7 @@
     <string name="ns_client_secret_title">Nightscout API secret</string>
     <string name="ns_client_secret_dialog_message">Wprowadź API secret swojego Nightscouta (minimum 12 znaków zapisanych w zmiennych środowiskowych Nightscout lub w ustawieniach platformy która dostarcza Ci Nightscout)</string>
     <string name="nsclient_token_title">Token dostępu do Nightscout</string>
-    <string name="nsclient_token_dialog_message">Wprowadź token dostępu do Nightscouta, wgenerowany (z rolą admin) na Twojej stronie Nightscout -> Menu hamburger ≡ -> Narzędzia administratora -> Obiekty (minimum 17 znaków, to NIE JEST nie twój API secret do Nightscouta!)</string>
+    <string name="nsclient_token_dialog_message">Wprowadź token dostępu do Nightscouta, wgenerowany (z rolą admin) na Twojej stronie Nightscout -&gt; Menu hamburger ≡ -&gt; Narzędzia administratora -&gt; Obiekty (minimum 17 znaków, to NIE JEST nie twój API secret do Nightscouta!)</string>
     <string name="deliver_now">Dostarcz teraz</string>
     <string name="queue">Kolejka:</string>
     <string name="status">Status:</string>
