@@ -7,6 +7,7 @@
     <string name="omnipod_eros_preferences_pulse_log_button_enabled">Mostra tasto \"log impulsi\" nel menu gestione pod</string>
     <string name="omnipod_eros_preferences_riley_link_stats_button_enabled">Mostra tasto \"statistiche RileyLink\" nel menu gestione pod</string>
     <string name="omnipod_eros_preferences_battery_change_logging_enabled">Abilita log cambio batteria in \"Azioni\"</string>
+    <string name="omnipod_eros_preferences_category_riley_link">RileyLink</string>
     <string name="omnipod_eros_preferences_notification_uncertain_tbr_sound_enabled">Suono notifiche TBR incerto abilitato</string>
     <string name="omnipod_eros_preferences_notification_uncertain_smb_sound_enabled">Suono notifiche SMB incerto abilitato</string>
     <string name="omnipod_eros_preferences_notification_uncertain_bolus_sound_enabled">Suono notifiche bolo incerto abilitato</string>
@@ -16,9 +17,11 @@
     <string name="omnipod_eros_history_item_source">Origine</string>
     <string name="omnipod_eros_history_item_date">Data</string>
     <string name="omnipod_eros_history_type">Tipo:</string>
+    <string name="omnipod_eros_history_bolus_value">%1$.2f U</string>
     <string name="omnipod_eros_history_bolus_value_with_carbs">%1$.2f U, CHO=%2$.1f g</string>
     <string name="omnipod_eros_history_tbr_value">Tasso: %1$.2f U, durata: %2$d minuti</string>
     <!-- Omnipod Eros - Short Status -->
+    <string name="omnipod_eros_short_status_riley_link_battery">RLBatt: %1$d</string>
     <!-- Omnipod Eros - Error -->
     <string name="omnipod_eros_error_riley_link_address_invalid">Indirizzo RileyLink non valido.</string>
     <string name="omnipod_eros_error_crc_mismatch">Comunicazione fallita: verifica dell\'integrità del messaggio fallita</string>
