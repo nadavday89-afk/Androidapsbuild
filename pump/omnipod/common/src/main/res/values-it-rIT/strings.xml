@@ -47,6 +47,7 @@
     <string name="omnipod_common_overview_button_silence_alerts">Silenzia avvisi</string>
     <string name="omnipod_common_overview_pod_status">Stato pod</string>
     <string name="omnipod_common_overview_total_delivered">Totale erogato</string>
+    <string name="omnipod_common_overview_total_delivered_value">%1$.2f U</string>
     <string name="omnipod_common_overview_pod_unique_id">ID univoco</string>
     <string name="omnipod_common_overview_lot_number">Numero LOT</string>
     <string name="omnipod_common_overview_pod_sequence_number">Numero sequenza</string>
@@ -164,10 +165,13 @@
     <string name="omnipod_common_short_status_no_active_pod">Nessun pod attivo</string>
     <string name="omnipod_common_short_status_last_connection">Ultima conn.: %1$d min fa</string>
     <string name="omnipod_common_short_status_last_bolus">Ultimo Bolo: %1$sU @ %2$s</string>
+    <string name="omnipod_common_short_status_temp_basal">Temp: %1$s</string>
     <string name="omnipod_common_short_status_extended_bolus">Esteso: %1$s</string>
     <string name="omnipod_common_short_status_reservoir">Serb: %1$sU</string>
     <!-- Omnipod - Other -->
     <string name="omnipod_common_yes">Sì</string>
+    <string name="omnipod_common_no">No</string>
+    <string name="omnipod_common_ok">OK</string>
     <string name="omnipod_common_cancel">Annulla</string>
     <string name="omnipod_common_warning">Avviso</string>
     <string name="omnipod_common_disable_suspend_alerts">DISABILITA ALLARMI DI SOSPENSIONE</string>
