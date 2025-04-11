@@ -19,6 +19,7 @@
     <string name="history_group_unknown">Ukjente</string>
     <string name="history_group_all">Alle</string>
     <string name="history_group_bolus">Boluser</string>
+    <string name="history_group_prime">Prime</string>
     <string name="history_group_alarm">Alarmer</string>
     <string name="history_group_glucose">Blodsukker</string>
     <string name="history_group_base">Utgangspunkt</string>
@@ -44,6 +45,7 @@
     <string name="ble_config_scan_error">Søk feilet: %1$d</string>
     <string name="ble_config_remove">Fjern</string>
     <!-- Pump History -->
+    <string name="pump_history_type">Type:</string>
     <plurals name="duration_days">
         <item quantity="one">%1$d dag</item>
         <item quantity="other">%1$d dager</item>
