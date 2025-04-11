@@ -22,6 +22,7 @@
     <string name="history_group_prime">Caricamento</string>
     <string name="history_group_alarm">Allarmi</string>
     <string name="history_group_glucose">Glicemia</string>
+    <string name="history_group_base">Base</string>
     <string name="history_group_other">Altro</string>
     <string name="history_group_events">Tutti gli eventi</string>
     <string name="history_group_events_no_stat">Eventi (no stat)</string>
@@ -37,6 +38,7 @@
     <string name="time_last_month">Ultimo mese</string>
     <!-- BLE Config -->
     <string name="ble_config_button_scan_start">Scansione</string>
+    <string name="ble_config_scan_stop">Stop</string>
     <string name="ble_config_scan_selected">Selezionato</string>
     <string name="ble_config_scan_scanning">Scansione</string>
     <string name="ble_config_scan_finished">Scansione terminata</string>
