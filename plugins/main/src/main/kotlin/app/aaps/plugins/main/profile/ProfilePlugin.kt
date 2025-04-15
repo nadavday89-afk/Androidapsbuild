@@ -106,10 +106,6 @@ class ProfilePlugin @Inject constructor(
     fun isValidEditState(activity: FragmentActivity?): Boolean {
         val pumpDescription = activePlugin.activePump.pumpDescription
         with(profiles[currentProfileIndex]) {
-            if (dia < hardLimits.minDia() || dia > hardLimits.maxDia()) {
-                ToastUtils.errorToast(activity, rh.gs(app.aaps.core.ui.R.string.value_out_of_hard_limits, rh.gs(app.aaps.core.ui.R.string.profile_dia), dia))
-                return false
-            }
             if (name.isEmpty()) {
                 ToastUtils.errorToast(activity, rh.gs(R.string.missing_profile_name))
                 return false

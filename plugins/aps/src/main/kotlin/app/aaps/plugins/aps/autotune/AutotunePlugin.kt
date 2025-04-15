@@ -250,6 +250,7 @@ class AutotunePlugin @Inject constructor(
                     if (profileFunction.createProfileSwitch(
                             profileStore = profileStore,
                             profileName = tunedP.profileName,
+                            iCfg = activePlugin.activeInsulin.iCfg,
                             durationInMinutes = 0,
                             percentage = 100,
                             timeShiftInHours = 0,

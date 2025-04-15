@@ -18,6 +18,7 @@ import app.aaps.core.interfaces.alerts.LocalAlertUtils
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.configuration.ConfigBuilder
 import app.aaps.core.interfaces.db.PersistenceLayer
+import app.aaps.core.interfaces.insulin.Insulin
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.plugin.PluginBase
@@ -29,6 +30,7 @@ import app.aaps.core.interfaces.utils.SafeParse
 import app.aaps.core.interfaces.versionChecker.VersionCheckerUtils
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.IntKey
+import app.aaps.core.keys.IntNonKey
 import app.aaps.core.keys.LongComposedKey
 import app.aaps.core.keys.StringKey
 import app.aaps.core.keys.UnitDoubleKey
@@ -198,7 +200,43 @@ class MainApp : DaggerApplication() {
     }
 
     private fun doMigrations() {
-        // set values for different builds
+        if (sp.getBoolean("ConfigBuilder_INSULIN_InsulinOrefRapidActingPlugin_Enabled", false) || preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefRapidActingPlugin") ||
+            sp.getBoolean("ConfigBuilder_INSULIN_InsulinOrefUltraRapidActingPlugin_Enabled", false) || preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefUltraRapidActingPlugin") ||
+            sp.getBoolean("ConfigBuilder_INSULIN_InsulinLyumjevPlugin_Enabled", false) || preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinLyumjevPlugin") ||
+            sp.getBoolean("ConfigBuilder_INSULIN_InsulinOrefFreePeakPlugin_Enabled", false) || preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefFreePeakPlugin")
+        ) {
+            aapsLogger.debug("XXXXX Migration InsulinPlugin")
+            when {
+                sp.getBoolean("ConfigBuilder_INSULIN_InsulinOrefUltraRapidActingPlugin_Enabled", false) ||
+                    preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefUltraRapidActingPlugin") -> preferences.put(IntNonKey.InsulinTemplate, Insulin.InsulinType.OREF_ULTRA_RAPID_ACTING.value)
+
+                sp.getBoolean("ConfigBuilder_INSULIN_InsulinLyumjevPlugin_Enabled", false) ||
+                    preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinLyumjevPlugin")         -> preferences.put(IntNonKey.InsulinTemplate, Insulin.InsulinType.OREF_LYUMJEV.value)
+
+                sp.getBoolean("ConfigBuilder_INSULIN_InsulinOrefFreePeakPlugin_Enabled", false) ||
+                    preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefFreePeakPlugin")    -> preferences.put(IntNonKey.InsulinTemplate, Insulin.InsulinType.OREF_FREE_PEAK.value)
+                else                                                                                                              -> preferences.put(IntNonKey.InsulinTemplate, Insulin.InsulinType.OREF_RAPID_ACTING.value)
+            }
+            sp.remove("ConfigBuilder_INSULIN_InsulinOrefRapidActingPlugin_Enabled")
+            sp.remove("ConfigBuilder_INSULIN_InsulinOrefRapidActingPlugin_Visible")
+            sp.remove("ConfigBuilder_INSULIN_InsulinOrefUltraRapidActingPlugin_Enabled")
+            sp.remove("ConfigBuilder_INSULIN_InsulinOrefUltraRapidActingPlugin_Visible")
+            sp.remove("ConfigBuilder_INSULIN_InsulinLyumjevPlugin_Enabled")
+            sp.remove("ConfigBuilder_INSULIN_InsulinLyumjevPlugin_Visible")
+            sp.remove("ConfigBuilder_INSULIN_InsulinOrefFreePeakPlugin_Enabled")
+            sp.remove("ConfigBuilder_INSULIN_InsulinOrefFreePeakPlugin_Visible")
+            preferences.remove(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefRapidActingPlugin")
+            preferences.remove(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefUltraRapidActingPlugin")
+            preferences.remove(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinLyumjevPlugin")
+            preferences.remove(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefFreePeakPlugin")
+            preferences.remove(ConfigurationBooleanComposedKey.ConfigBuilderVisible, "INSULIN_InsulinOrefRapidActingPlugin")
+            preferences.remove(ConfigurationBooleanComposedKey.ConfigBuilderVisible, "INSULIN_InsulinOrefUltraRapidActingPlugin")
+            preferences.remove(ConfigurationBooleanComposedKey.ConfigBuilderVisible, "INSULIN_InsulinLyumjevPlugin")
+            preferences.remove(ConfigurationBooleanComposedKey.ConfigBuilderVisible, "INSULIN_InsulinOrefFreePeakPlugin")
+            preferences.put(ConfigurationBooleanComposedKey.ConfigBuilderVisible, "INSULIN_InsulinPlugin", value = true)
+            preferences.put(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinPlugin", value = true)
+        }
+
         // 3.3
         if (preferences.get(IntKey.OverviewEatingSoonDuration) == 0) preferences.remove(IntKey.OverviewEatingSoonDuration)
         if (preferences.get(UnitDoubleKey.OverviewEatingSoonTarget) == 0.0) preferences.remove(UnitDoubleKey.OverviewEatingSoonTarget)

@@ -5,6 +5,7 @@ import androidx.annotation.DrawableRes
 import app.aaps.core.data.ue.Sources
 import app.aaps.core.data.ue.ValueWithUnit
 import app.aaps.core.interfaces.logging.LTag
+import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.queue.Callback
 import app.aaps.core.utils.JsonHelper
@@ -21,6 +22,7 @@ import javax.inject.Inject
 
 class ActionProfileSwitchPercent(injector: HasAndroidInjector) : Action(injector) {
 
+    @Inject lateinit var activePlugin: ActivePlugin
     @Inject lateinit var profileFunction: ProfileFunction
 
     var pct = InputPercent()
@@ -39,6 +41,7 @@ class ActionProfileSwitchPercent(injector: HasAndroidInjector) : Action(injector
 
     override fun doAction(callback: Callback) {
         if (profileFunction.createProfileSwitch(
+                iCfg = activePlugin.activeInsulin.iCfg,
                 durationInMinutes = duration.value,
                 percentage = pct.value.toInt(),
                 timeShiftInHours = 0,

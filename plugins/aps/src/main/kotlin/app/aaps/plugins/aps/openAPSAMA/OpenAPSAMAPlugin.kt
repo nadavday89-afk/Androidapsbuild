@@ -141,7 +141,7 @@ class OpenAPSAMAPlugin @Inject constructor(
         }
         val inputConstraints = ConstraintObject(0.0, aapsLogger) // fake. only for collecting all results
 
-        if (!hardLimits.checkHardLimits(profile.dia, app.aaps.core.ui.R.string.profile_dia, hardLimits.minDia(), hardLimits.maxDia())) return
+        if (!hardLimits.checkHardLimits(profile.iCfg().getDia(), app.aaps.core.ui.R.string.profile_dia, hardLimits.minDia(), hardLimits.maxDia())) return
         if (!hardLimits.checkHardLimits(
                 profile.getIcTimeFromMidnight(MidnightUtils.secondsFromMidnight()),
                 app.aaps.core.ui.R.string.profile_carbs_ratio_value,

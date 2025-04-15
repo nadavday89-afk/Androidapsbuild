@@ -1807,6 +1807,7 @@ class DataHandlerMobile @Inject constructor(
         profileFunction.getProfile() ?: return
         //send profile to pump
         profileFunction.createProfileSwitch(
+            iCfg = activePlugin.activeInsulin.iCfg,
             durationInMinutes = command.duration,
             percentage = command.percentage,
             timeShiftInHours = command.timeShift,

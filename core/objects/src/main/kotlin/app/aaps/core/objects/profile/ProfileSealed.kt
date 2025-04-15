@@ -26,6 +26,7 @@ import app.aaps.core.objects.extensions.lowTargetBlockValueBySeconds
 import app.aaps.core.objects.extensions.shiftBlock
 import app.aaps.core.objects.extensions.shiftTargetBlock
 import app.aaps.core.objects.extensions.targetBlockValueBySeconds
+import app.aaps.core.objects.extensions.toJson
 import app.aaps.core.ui.R
 import app.aaps.core.utils.MidnightUtils
 import org.json.JSONArray
@@ -46,7 +47,7 @@ sealed class ProfileSealed(
     var duration: Long?, // [milliseconds]
     var ts: Int, // timeshift [hours]
     var pct: Int,
-    var iCfg: ICfg,
+    var iCfg: ICfg = ICfg("",0,0.0),
     val utcOffset: Long,
     val aps: APS?
 ) : Profile {
@@ -115,9 +116,8 @@ sealed class ProfileSealed(
         null,
         0,
         100,
-        ICfg("", (value.dia * 3600 * 1000).toLong(), 0),
-        value.timeZone.rawOffset.toLong(),
-        activePlugin?.activeAPS
+        utcOffset = value.timeZone.rawOffset.toLong(),
+        aps = activePlugin?.activeAPS
     )
 
     override fun isValid(from: String, pump: Pump, config: Config, rh: ResourceHelper, rxBus: RxBus, hardLimits: HardLimits, sendNotifications: Boolean): Profile.ValidityCheck {
@@ -166,10 +166,6 @@ sealed class ProfileSealed(
             }
         }
 
-        if (!hardLimits.isInRange(dia, hardLimits.minDia(), hardLimits.maxDia())) {
-            validityCheck.isValid = false
-            validityCheck.reasons.add(rh.gs(R.string.value_out_of_hard_limits, rh.gs(R.string.profile_dia), dia))
-        }
         for (ic in icBlocks)
             if (!hardLimits.isInRange(ic.amount * 100.0 / percentage, hardLimits.minIC(), hardLimits.maxIC())) {
                 validityCheck.isValid = false
@@ -235,6 +231,8 @@ sealed class ProfileSealed(
         }
     override val dia: Double
         get() = iCfg.insulinEndTime / 1000.0 / 60.0 / 60.0
+
+    override fun iCfg() = iCfg
 
     override val timeshift: Int
         get() = ts
@@ -318,11 +316,6 @@ sealed class ProfileSealed(
             icBlocks = icBlocks.shiftBlock(100.0 / percentage, timeshift),
             targetBlocks = targetBlocks.shiftTargetBlock(timeshift),
             glucoseUnit = units,
-            dia = when (this) {
-                is PS   -> this.value.iCfg.insulinEndTime / 3600.0 / 1000.0
-                is EPS  -> this.value.iCfg.insulinEndTime / 3600.0 / 1000.0
-                is Pure -> this.value.dia
-            },
             timeZone = TimeZone.getDefault()
         )
 
@@ -330,6 +323,7 @@ sealed class ProfileSealed(
         val o = JSONObject()
         o.put("units", units.asText)
         o.put("dia", dia)
+        o.put("icfg", iCfg.toJson())
         o.put("timezone", dateUtil.timeZoneByOffset(utcOffset).id ?: "UTC")
         // SENS
         val sens = JSONArray()

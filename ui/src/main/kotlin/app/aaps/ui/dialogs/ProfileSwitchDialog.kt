@@ -138,6 +138,22 @@ class ProfileSwitchDialog : DialogFragmentWithDate() {
                     if (profileList[p] == profileFunction.getOriginalProfileName())
                         binding.profileList.setText(profileList[p], false)
             }
+            val currentICfg = profileFunction.getProfile()?.iCfg()?.let { iCfg ->
+                activePlugin.activeInsulin.getOrCreateInsulin(iCfg)
+            }
+            val insulinList = activePlugin.activeInsulin.insulinList()
+
+            if (insulinList.isEmpty()) {
+                dismiss()
+                return
+            }
+            binding.insulinList.setAdapter(ArrayAdapter(context, app.aaps.core.ui.R.layout.spinner_centered, insulinList))
+            // set selected to current Active insulin
+
+            binding.insulinList.setText(insulinList[0], false)
+            currentICfg?.let { iCfg ->
+                binding.insulinList.setText(iCfg.insulinLabel, false)
+            }
         }
 
         profileFunction.getProfile()?.let { profile ->
@@ -191,15 +207,18 @@ class ProfileSwitchDialog : DialogFragmentWithDate() {
         val units = profileFunction.getUnits()
         if (isTT)
             actions.add(rh.gs(app.aaps.core.ui.R.string.temporary_target) + ": " + rh.gs(app.aaps.core.ui.R.string.activity))
+        val insulinName  = binding.insulinList.text.toString()
+        val iCfg = activePlugin.activeInsulin.getInsulin(insulinName)
 
         activity?.let { activity ->
-            val ps = profileFunction.buildProfileSwitch(profileStore, profileName, duration, percent, timeShift, eventTime) ?: return@let
+            val ps = profileFunction.buildProfileSwitch(profileStore, profileName, iCfg, duration, percent, timeShift, eventTime) ?: return@let
             val validity = ProfileSealed.PS(ps, activePlugin).isValid(rh.gs(app.aaps.core.ui.R.string.careportal_profileswitch), activePlugin.activePump, config, rh, rxBus, hardLimits, false)
             if (validity.isValid)
                 OKDialog.showConfirmation(activity, rh.gs(app.aaps.core.ui.R.string.careportal_profileswitch), HtmlHelper.fromHtml(Joiner.on("<br/>").join(actions)), {
                     if (profileFunction.createProfileSwitch(
                             profileStore = profileStore,
                             profileName = profileName,
+                            iCfg = iCfg,
                             durationInMinutes = duration,
                             percentage = percent,
                             timeShiftInHours = timeShift,
@@ -210,12 +229,14 @@ class ProfileSwitchDialog : DialogFragmentWithDate() {
                             listValues = listOf(
                                 ValueWithUnit.Timestamp(eventTime).takeIf { eventTimeChanged },
                                 ValueWithUnit.SimpleString(profileName),
+                                ValueWithUnit.SimpleString(insulinName),
                                 ValueWithUnit.Percent(percent),
                                 ValueWithUnit.Hour(timeShift).takeIf { timeShift != 0 },
                                 ValueWithUnit.Minute(duration).takeIf { duration != 0 }
                             ).filterNotNull()
                         )
                     ) {
+                        activePlugin.activeInsulin.setDefault(iCfg)
                         if (percent == 90 && duration == 10) preferences.put(BooleanNonKey.ObjectivesProfileSwitchUsed, true)
                         if (isTT) {
                             disposable += persistenceLayer.insertAndCancelCurrentTemporaryTarget(

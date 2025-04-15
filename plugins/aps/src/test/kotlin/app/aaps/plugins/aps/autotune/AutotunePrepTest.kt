@@ -189,8 +189,7 @@ class AutotunePrepTest : TestBaseWithProfile() {
                 icBlocks = icBlocks,
                 targetBlocks = targetBlocks,
                 glucoseUnit = units,
-                timeZone = timezone,
-                dia = dia
+                timeZone = timezone
             )
             return ATProfile(ProfileSealed.Pure(pure, activePlugin), localInsulin, injector).also { it.dateUtil = dateUtil }
         } catch (ignored: Exception) {
