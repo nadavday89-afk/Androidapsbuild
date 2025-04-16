@@ -28,7 +28,6 @@ class InsulinPluginTest: TestBaseWithProfile() {
 
     @Mock lateinit var uiInteraction: UiInteraction
     @Mock lateinit var uel: UserEntryLogger
-    @Mock lateinit var sharedPrefs: SharedPreferences
 
     init {
         addInjector {
@@ -49,7 +48,7 @@ class InsulinPluginTest: TestBaseWithProfile() {
     @Test
     fun `simple peak test`() {
         `when`(profileFunction.getProfile()).thenReturn(validProfile)
-        assertThat(sut.peak).isEqualTo(75)
+        assertThat(sut.iCfg.getPeak()).isEqualTo(75)
     }
 
     @Test

@@ -74,33 +74,10 @@ class InsulinPlugin @Inject constructor(
     override val id = InsulinType.UNKNOWN
     override val friendlyName get(): String = rh.gs(app.aaps.core.interfaces.R.string.insulin_plugin)
 
-    override val dia
-        get(): Double {
-            val dia = userDefinedDia
-            return if (dia >= hardLimits.minDia() && dia <= hardLimits.maxDia()) {
-                dia
-            } else {
-                if (dia < hardLimits.minDia())
-                    hardLimits.minDia()
-                else
-                    hardLimits.maxDia()
-            }
-        }
-    override val peak: Int
-        get(): Int {
-            val peak = userDefinedPeak
-            return if (peak >= hardLimits.minPeak() && peak <= hardLimits.maxPeak()) {
-                peak.toInt()
-            } else {
-                getTemplatePeak()
-            }
-        }
-
     override val iCfg: ICfg
         get() {
             val profile = profileFunction.getProfile()
             return profile?.iCfg()?.also { iCfg ->
-                aapsLogger.debug("XXXXX ActiveInsulin ${iCfg.getPeak()}, ${iCfg.getDia()}")
                 if (iCfg.getPeak() < hardLimits.minPeak() || iCfg.getPeak() > hardLimits.maxPeak())
                     iCfg.setPeak(getTemplatePeak())
             } ?: insulins[0]
@@ -123,11 +100,6 @@ class InsulinPlugin @Inject constructor(
     var currentInsulinIndex = 0
     val numOfInsulins get() = insulins.size
     var isEdited: Boolean = false
-    val userDefinedDia: Double
-        get() = iCfg.getDia()
-
-    val userDefinedPeak: Int
-        get() = iCfg.getPeak()
 
     override fun onStart() {
         super.onStart()
@@ -158,7 +130,10 @@ class InsulinPlugin @Inject constructor(
                 return it
             }
         }
-        return addNewInsulin(iCfg)
+        return addNewInsulin(iCfg.also {
+            if (it.insulinTemplate == 0)
+                it.insulinTemplate = Insulin.InsulinType.fromPeak(it.insulinPeakTime).value
+        })
     }
 
     private fun getTemplatePeak(): Int {
@@ -175,11 +150,13 @@ class InsulinPlugin @Inject constructor(
             if (iCfg.isEqual(it)) {
                 currentInsulinIndex = index
                 currentInsulin = currentInsulin().deepClone()
+                isEdited = currentInsulin.insulinTemplate == 0
                 return index
             }
         }
         addNewInsulin(iCfg)
         currentInsulin = currentInsulin().deepClone()
+        isEdited = currentInsulin.insulinTemplate == 0
         return insulins.size - 1
     }
 
@@ -237,8 +214,8 @@ class InsulinPlugin @Inject constructor(
         storeSettings()
     }
 
-    fun createNewInsulinLabel(iCfg: ICfg, currentIndex: Int = -1): String {
-        val template = InsulinType.fromPeak(iCfg.insulinPeakTime)
+    fun createNewInsulinLabel(iCfg: ICfg, currentIndex: Int = -1, template: InsulinType? = null): String {
+        val template = template ?:InsulinType.fromPeak(iCfg.insulinPeakTime)
         var insulinLabel = when (template) {
             InsulinType.OREF_FREE_PEAK -> "${rh.gs(template.label)}_${iCfg.getPeak()}_${iCfg.getDia()}"
             else                       -> "${rh.gs(template.label)}_${iCfg.getDia()}"
@@ -344,14 +321,14 @@ class InsulinPlugin @Inject constructor(
     @Synchronized
     fun isValidEditState(activity: FragmentActivity?, verbose: Boolean = true): Boolean {
         with(currentInsulin) {
-            if (insulinEndTime < hardLimits.minDia() || dia > hardLimits.maxDia()) {
+            if (getDia() < hardLimits.minDia() || getDia() > hardLimits.maxDia()) {
                 if (verbose)
-                    ToastUtils.errorToast(activity, rh.gs(app.aaps.core.ui.R.string.value_out_of_hard_limits, rh.gs(app.aaps.core.ui.R.string.insulin_dia), dia))
+                    ToastUtils.errorToast(activity, rh.gs(app.aaps.core.ui.R.string.value_out_of_hard_limits, rh.gs(app.aaps.core.ui.R.string.insulin_dia), getDia()))
                 return false
             }
-            if (peak < hardLimits.minPeak() || dia > hardLimits.maxPeak()) {
+            if (getPeak() < hardLimits.minPeak() || getPeak() > hardLimits.maxPeak()) {
                 if (verbose)
-                    ToastUtils.errorToast(activity, rh.gs(app.aaps.core.ui.R.string.value_out_of_hard_limits, rh.gs(app.aaps.core.ui.R.string.insulin_peak), peak))
+                    ToastUtils.errorToast(activity, rh.gs(app.aaps.core.ui.R.string.value_out_of_hard_limits, rh.gs(app.aaps.core.ui.R.string.insulin_peak), getPeak()))
                 return false
             }
             if (insulinLabel.isEmpty()) {

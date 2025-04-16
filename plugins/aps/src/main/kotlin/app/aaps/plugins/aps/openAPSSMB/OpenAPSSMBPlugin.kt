@@ -281,8 +281,8 @@ open class OpenAPSSMBPlugin @Inject constructor(
 
         val insulin = activePlugin.activeInsulin
         dynIsfResult.insulinDivisor = when {
-            insulin.peak > 65 -> 55 // rapid peak: 75
-            insulin.peak > 50 -> 65 // ultra rapid peak: 55
+            insulin.iCfg.getPeak() > 65 -> 55 // rapid peak: 75
+            insulin.iCfg.getPeak() > 50 -> 65 // ultra rapid peak: 55
             else              -> 75 // lyumjev peak: 45
         }
 

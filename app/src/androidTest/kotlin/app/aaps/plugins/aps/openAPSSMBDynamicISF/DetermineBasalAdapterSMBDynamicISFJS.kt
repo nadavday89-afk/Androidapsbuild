@@ -303,8 +303,8 @@ class DetermineBasalAdapterSMBDynamicISFJS(private val scriptReader: ScriptReade
 
         val insulin = activePlugin.activeInsulin
         val insulinDivisor = when {
-            insulin.peak > 65 -> 55 // lyumjev peak: 45
-            insulin.peak > 50 -> 65 // ultra rapid peak: 55
+            insulin.iCfg.getPeak() > 65 -> 55 // lyumjev peak: 45
+            insulin.iCfg.getPeak() > 50 -> 65 // ultra rapid peak: 55
             else              -> 75 // rapid peak: 75
         }
 

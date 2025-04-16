@@ -23,8 +23,11 @@ import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.HardLimits
 import app.aaps.core.interfaces.utils.SafeParse
+import app.aaps.core.keys.IntNonKey
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.extensions.setTemplate
 import app.aaps.core.ui.dialogs.OKDialog
+import app.aaps.core.ui.extensions.toVisibility
 import app.aaps.plugins.insulin.databinding.InsulinFragmentBinding
 import dagger.android.support.DaggerFragment
 import java.text.DecimalFormat
@@ -32,6 +35,7 @@ import javax.inject.Inject
 
 class InsulinFragment : DaggerFragment() {
 
+    @Inject lateinit var preferences: Preferences
     @Inject lateinit var activePlugin: ActivePlugin
     @Inject lateinit var hardLimits: HardLimits
     @Inject lateinit var rh: ResourceHelper
@@ -83,7 +87,7 @@ class InsulinFragment : DaggerFragment() {
                         {
                             insulinPlugin.currentInsulinIndex = position
                             insulinPlugin.currentInsulin = insulinPlugin.currentInsulin().deepClone()
-                            insulinPlugin.isEdited = false
+                            insulinPlugin.isEdited = currentInsulin.insulinTemplate == 0
                             build()
                         }, null
                     )
@@ -91,6 +95,7 @@ class InsulinFragment : DaggerFragment() {
             } else {
                 insulinPlugin.currentInsulinIndex = position
                 insulinPlugin.currentInsulin = insulinPlugin.currentInsulin().deepClone()
+                insulinPlugin.isEdited = currentInsulin.insulinTemplate == 0
                 build()
             }
         }
@@ -113,12 +118,13 @@ class InsulinFragment : DaggerFragment() {
             if (insulinPlugin.isEdited) {
                 activity?.let { OKDialog.show(it, "", rh.gs(R.string.save_or_reset_changes_first)) }
             } else {
-                selectedTemplate = Insulin.InsulinType.fromPeak(insulinPlugin.iCfg.insulinPeakTime)
+                selectedTemplate = Insulin.InsulinType.fromInt(preferences.get(IntNonKey.InsulinTemplate))
                 insulinPlugin.addNewInsulin(
                     ICfg(
                         insulinLabel = "",                      // Let plugin propose a new unique name from template
                         peak = insulinPlugin.iCfg.getPeak(),    // Current default insulin is default peak for new insulins
-                        dia = selectedTemplate.dia
+                        dia = selectedTemplate.dia,
+                        insulinTemplate = 0
                     )
                 )
                 insulinPlugin.isEdited = true
@@ -131,14 +137,14 @@ class InsulinFragment : DaggerFragment() {
             } else {
                 if (insulinPlugin.currentInsulinIndex != insulinPlugin.defaultInsulinIndex) {
                     insulinPlugin.removeCurrentInsulin(activity)
-                    insulinPlugin.isEdited = false
+                    insulinPlugin.isEdited = currentInsulin.insulinTemplate == 0
                 }
                 build()
             }
         }
         binding.reset.setOnClickListener {
             insulinPlugin.currentInsulin = insulinPlugin.currentInsulin().deepClone()
-            insulinPlugin.isEdited = false
+            insulinPlugin.isEdited = currentInsulin.insulinTemplate == 0
             build()
         }
         binding.save.setOnClickListener {
@@ -155,7 +161,7 @@ class InsulinFragment : DaggerFragment() {
             build()
         }
         binding.autoName.setOnClickListener {
-            binding.name.setText(insulinPlugin.createNewInsulinLabel(currentInsulin, insulinPlugin.currentInsulinIndex))
+            binding.name.setText(insulinPlugin.createNewInsulinLabel(currentInsulin, insulinPlugin.currentInsulinIndex, selectedTemplate))
             insulinPlugin.isEdited = true
             build()
         }
@@ -164,7 +170,8 @@ class InsulinFragment : DaggerFragment() {
         context?.let { context ->
             binding.insulinTemplate.setAdapter(ArrayAdapter(context, app.aaps.core.ui.R.layout.spinner_centered, insulinTemplateList))
         } ?: return
-        binding.insulinTemplate.setText(currentInsulin.let { rh.gs(Insulin.InsulinType.fromPeak(it.insulinPeakTime).label) }, false)
+        binding.insulinTemplate.setText(rh.gs(Insulin.InsulinType.fromPeak(currentInsulin.insulinPeakTime).label), false)
+        binding.insulinTemplateText.text = rh.gs(Insulin.InsulinType.fromPeak(currentInsulin.insulinPeakTime).label)
     }
 
     @Synchronized
@@ -215,17 +222,21 @@ class InsulinFragment : DaggerFragment() {
         else
             binding.insulinRemove.visibility = View.GONE
         binding.graph.show(activePlugin.activeInsulin, currentInsulin)
+        binding.insulinTemplateMenu.visibility = (currentInsulin.insulinTemplate==0).toVisibility()
+        binding.insulinTemplateFrozen.visibility = (currentInsulin.insulinTemplate!=0).toVisibility()
     }
 
     fun build() {
-        selectedTemplate = Insulin.InsulinType.fromPeak(insulinPlugin.currentInsulin().insulinPeakTime)
-        binding.insulinTemplate.setText(rh.gs(Insulin.InsulinType.fromPeak(currentInsulin.insulinPeakTime).label), false)
+        if (currentInsulin.insulinTemplate != 0)
+            selectedTemplate = Insulin.InsulinType.fromInt(currentInsulin.insulinTemplate)
+        binding.insulinTemplate.setText(rh.gs(selectedTemplate.label), false)
+        binding.insulinTemplateText.text = rh.gs(selectedTemplate.label)
         binding.name.removeTextChangedListener(textWatch)
         binding.name.setText(currentInsulin.insulinLabel)
         binding.name.addTextChangedListener(textWatch)
         binding.insulinList.filters = arrayOf()
         binding.insulinList.setText(currentInsulin.insulinLabel)
-
+        aapsLogger.debug("XXXXX selectedTemplate $selectedTemplate")
         when (selectedTemplate) {
             Insulin.InsulinType.OREF_FREE_PEAK -> {
                 minPeak = hardLimits.minPeak().toDouble()

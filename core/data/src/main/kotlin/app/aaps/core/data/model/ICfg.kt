@@ -7,7 +7,7 @@ data class ICfg(
     var insulinTemplate: Int = 0   // for template recording wihin InsulinPlugin
 ) {
 
-    constructor(insulinLabel: String, peak: Int, dia: Double) : this(insulinLabel = insulinLabel, insulinEndTime = (dia * 3600 * 1000).toLong(), insulinPeakTime = (peak * 60000).toLong())
+    constructor(insulinLabel: String, peak: Int, dia: Double, insulinTemplate: Int = 0) : this(insulinLabel = insulinLabel, insulinEndTime = (dia * 3600 * 1000).toLong(), insulinPeakTime = (peak * 60000).toLong(), insulinTemplate = insulinTemplate)
 
     fun isEqual(iCfg: ICfg?): Boolean {
         iCfg?.let { iCfg ->

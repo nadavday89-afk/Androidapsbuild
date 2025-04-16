@@ -200,6 +200,7 @@ class MainApp : DaggerApplication() {
     }
 
     private fun doMigrations() {
+        // Migrate Insulin Plugin
         if (sp.getBoolean("ConfigBuilder_INSULIN_InsulinOrefRapidActingPlugin_Enabled", false) || preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefRapidActingPlugin") ||
             sp.getBoolean("ConfigBuilder_INSULIN_InsulinOrefUltraRapidActingPlugin_Enabled", false) || preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefUltraRapidActingPlugin") ||
             sp.getBoolean("ConfigBuilder_INSULIN_InsulinLyumjevPlugin_Enabled", false) || preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinLyumjevPlugin") ||
@@ -325,7 +326,8 @@ class MainApp : DaggerApplication() {
                 sp.remove(key)
             }
         }
-        // Migrate Profile
+        // Migrate Profile and Insulin/DIA
+        val listDia = mutableListOf<Double>()
         for ((key, value) in keys) {
             if (key.startsWith(Constants.LOCAL_PROFILE + "_") && key.endsWith("_mgdl")) {
                 val number = key.split("_")[1]
@@ -369,15 +371,20 @@ class MainApp : DaggerApplication() {
             }
             if (key.startsWith(Constants.LOCAL_PROFILE + "_") && key.endsWith("_dia")) {
                 val number = key.split("_")[1]
-                if (value is String)
+                if (value is String) {
                     preferences.put(ProfileComposedDoubleKey.LocalProfileNumberedDia, SafeParse.stringToInt(number), value = SafeParse.stringToDouble(value))
-                else if (value is Float)
-                    preferences.put(ProfileComposedDoubleKey.LocalProfileNumberedDia, SafeParse.stringToInt(number), value = value.toDouble())
-                else
-                    preferences.put(ProfileComposedDoubleKey.LocalProfileNumberedDia, SafeParse.stringToInt(number), value = value as Double)
+                    listDia.add(SafeParse.stringToDouble(value))
+                } else if (value is Float) {
+                    //preferences.put(ProfileComposedDoubleKey.LocalProfileNumberedDia, SafeParse.stringToInt(number), value = value.toDouble())
+                    listDia.add(value.toDouble())
+                } else {
+                    //preferences.put(ProfileComposedDoubleKey.LocalProfileNumberedDia, SafeParse.stringToInt(number), value = value as Double)
+                    listDia.add(value as Double)
+                }
                 sp.remove(key)
             }
         }
+
     }
 
     override fun applicationInjector(): AndroidInjector<out DaggerApplication> {
