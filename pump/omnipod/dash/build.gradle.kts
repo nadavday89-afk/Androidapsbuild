@@ -8,7 +8,14 @@ plugins {
 }
 
 android {
-    namespace = "app.aaps.pump.medtronic"
+
+    namespace = "app.aaps.pump.omnipod.dash"
+    defaultConfig {
+        ksp {
+            arg("room.incremental", "true")
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
+    }
 }
 
 dependencies {
@@ -16,15 +23,22 @@ dependencies {
     implementation(project(":core:interfaces"))
     implementation(project(":core:keys"))
     implementation(project(":core:libraries"))
-    implementation(project(":core:ui"))
     implementation(project(":core:utils"))
+    implementation(project(":core:ui"))
     implementation(project(":core:validators"))
     implementation(project(":pump:common"))
-    implementation(project(":pump:rileylink"))
+    implementation(project(":pump:omnipod:common"))
 
-    testImplementation(project(":core:keys"))
+    api(libs.androidx.room)
+    api(libs.androidx.room.runtime)
+    api(libs.androidx.room.rxjava3)
+    api(libs.com.github.guepardoapps.kulid)
+
+    androidTestImplementation(project(":shared:tests"))
     testImplementation(project(":shared:tests"))
+    testImplementation(libs.commons.codec)
 
     ksp(libs.com.google.dagger.compiler)
     ksp(libs.com.google.dagger.android.processor)
+    ksp(libs.androidx.room.compiler)
 }

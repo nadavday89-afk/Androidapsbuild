@@ -1,20 +1,18 @@
-package app.aaps.pump.dana.database
+package app.aaps.pump.omnipod.eros.history.database
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-const val TABLE_DANA_HISTORY = "danaHistory"
-
 @Database(
-    entities = [DanaHistoryRecord::class],
-    exportSchema = true,
-    version = DanaHistoryDatabase.VERSION
+    entities = [ErosHistoryRecordEntity::class],
+    exportSchema = false,
+    version = ErosHistoryDatabase.VERSION
 )
-abstract class DanaHistoryDatabase : RoomDatabase() {
+abstract class ErosHistoryDatabase : RoomDatabase() {
 
-    abstract fun historyRecordDao(): DanaHistoryRecordDao
+    abstract fun historyRecordDao(): ErosHistoryRecordDao
 
     companion object {
 
@@ -23,8 +21,8 @@ abstract class DanaHistoryDatabase : RoomDatabase() {
         fun build(context: Context) =
             Room.databaseBuilder(
                 context.applicationContext,
-                DanaHistoryDatabase::class.java,
-                "dana_database.db"
+                ErosHistoryDatabase::class.java,
+                "omnipod_eros_history_database.db"
             )
                 .fallbackToDestructiveMigration(false)
                 .build()
