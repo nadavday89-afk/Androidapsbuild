@@ -202,6 +202,10 @@ class PreferencesImpl @Inject constructor(
         sp.putBoolean(key.composeKey(*arguments), value)
     }
 
+    override fun remove(key: BooleanComposedNonPreferenceKey, vararg arguments: Any) {
+        sp.remove(String.format(Locale.ENGLISH, key.key, arguments))
+    }
+
     override fun get(key: StringComposedNonPreferenceKey, vararg arguments: Any): String =
         sp.getString(key.composeKey(*arguments), key.defaultValue)
 
@@ -213,6 +217,10 @@ class PreferencesImpl @Inject constructor(
     }
 
     override fun remove(key: StringComposedNonPreferenceKey, vararg arguments: Any) {
+        sp.remove(String.format(Locale.ENGLISH, key.key, arguments))
+    }
+
+    override fun remove(key: DoubleComposedNonPreferenceKey, vararg arguments: Any) {
         sp.remove(String.format(Locale.ENGLISH, key.key, arguments))
     }
 

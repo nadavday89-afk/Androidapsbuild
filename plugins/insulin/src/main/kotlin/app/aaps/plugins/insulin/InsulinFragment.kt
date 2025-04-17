@@ -100,9 +100,8 @@ class InsulinFragment : DaggerFragment() {
             }
         }
         if (insulinPlugin.numOfInsulins == 0) {
-            insulinPlugin.addNewInsulin(
-                ICfg("", selectedTemplate.peak, selectedTemplate.dia)
-            )
+            aapsLogger.debug("XXXXX getOrCreate fragment start 0")
+            insulinPlugin.loadSettings()
         }
         insulinPlugin.setCurrent(insulinPlugin.iCfg)
 
@@ -132,15 +131,11 @@ class InsulinFragment : DaggerFragment() {
             }
         }
         binding.insulinRemove.setOnClickListener {
-            if (insulinPlugin.isEdited) {
-                activity?.let { OKDialog.show(it, "", rh.gs(R.string.save_or_reset_changes_first)) }
-            } else {
-                if (insulinPlugin.currentInsulinIndex != insulinPlugin.defaultInsulinIndex) {
-                    insulinPlugin.removeCurrentInsulin(activity)
-                    insulinPlugin.isEdited = currentInsulin.insulinTemplate == 0
-                }
-                build()
+            if (insulinPlugin.currentInsulinIndex != insulinPlugin.defaultInsulinIndex) {
+                insulinPlugin.removeCurrentInsulin(activity)
+                insulinPlugin.isEdited = currentInsulin.insulinTemplate == 0
             }
+            build()
         }
         binding.reset.setOnClickListener {
             insulinPlugin.currentInsulin = insulinPlugin.currentInsulin().deepClone()

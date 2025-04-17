@@ -378,7 +378,6 @@ class AutotunePlugin @Inject constructor(
             return
         }
         profilePlugin.currentProfileIndex = indexLocalProfile
-        profilePlugin.currentProfile()?.dia = newProfile.dia
         profilePlugin.currentProfile()?.basal = newProfile.basal()
         profilePlugin.currentProfile()?.ic = newProfile.ic(circadian)
         profilePlugin.currentProfile()?.isf = newProfile.isf(circadian)

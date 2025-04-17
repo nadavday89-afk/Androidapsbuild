@@ -19,14 +19,13 @@ import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.plugin.PluginBase
 import app.aaps.core.interfaces.plugin.PluginDescription
 import app.aaps.core.interfaces.profile.ProfileFunction
-import app.aaps.core.interfaces.profile.ProfileStore
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.bus.RxBus
-import app.aaps.core.interfaces.rx.events.EventLocalProfileChanged
 import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.interfaces.utils.HardLimits
 import app.aaps.core.keys.IntNonKey
 import app.aaps.core.keys.StringKey
+import app.aaps.core.keys.StringNonKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.extensions.fromJson
 import app.aaps.core.objects.extensions.toJson
@@ -79,7 +78,7 @@ class InsulinPlugin @Inject constructor(
             val profile = profileFunction.getProfile()
             return profile?.iCfg()?.also { iCfg ->
                 if (iCfg.getPeak() < hardLimits.minPeak() || iCfg.getPeak() > hardLimits.maxPeak())
-                    iCfg.setPeak(getTemplatePeak())
+                    iCfg.setPeak(getDefaultPeak())
             } ?: insulins[0]
         }
 
@@ -115,34 +114,38 @@ class InsulinPlugin @Inject constructor(
     override fun setDefault(iCfg: ICfg) {
         if (iCfg.getPeak() >= hardLimits.minPeak() && iCfg.getPeak() <= hardLimits.maxPeak()) {
             preferences.put(IntNonKey.InsulinOrefPeak, iCfg.getPeak())
-            preferences.put(IntNonKey.InsulinTemplate, if(iCfg.insulinTemplate!=0) iCfg.insulinTemplate else Insulin.InsulinType.fromPeak(iCfg.insulinPeakTime).value)
+            preferences.put(IntNonKey.InsulinTemplate, if (iCfg.insulinTemplate != 0) iCfg.insulinTemplate else Insulin.InsulinType.fromPeak(iCfg.insulinPeakTime).value)
         }
     }
 
     override fun getOrCreateInsulin(iCfg: ICfg): ICfg {
+        aapsLogger.debug("XXXXX numberOfInsulin $numOfInsulins")
         // First Check insulin with hardlimits, and set default value if not consistent
         if (iCfg.getPeak() < hardLimits.minPeak() || iCfg.getPeak() > hardLimits.maxPeak())
-            iCfg.setPeak(getTemplatePeak())
+            iCfg.setPeak(getDefaultPeak())
         if (iCfg.getDia() < hardLimits.minDia() || iCfg.getDia() > hardLimits.maxDia())
-            iCfg.setDia(if (numOfInsulins == 0) InsulinType.OREF_RAPID_ACTING.dia else insulins[defaultInsulinIndex].getDia())
+            iCfg.setDia(getDefaultDia())
         insulins.forEachIndexed { index, it ->
             if (iCfg.isEqual(it)) {
                 return it
             }
         }
+        aapsLogger.debug("XXXXX addNewInsulin get not Found so Create")
         return addNewInsulin(iCfg.also {
             if (it.insulinTemplate == 0)
-                it.insulinTemplate = Insulin.InsulinType.fromPeak(it.insulinPeakTime).value
+                it.insulinTemplate = InsulinType.fromPeak(it.insulinPeakTime).value
         })
     }
 
-    private fun getTemplatePeak(): Int {
+    fun getDefaultPeak(): Int {
         val template = InsulinType.fromInt(preferences.get(IntNonKey.InsulinTemplate))
-        return when(template) {
+        return when (template) {
             InsulinType.OREF_FREE_PEAK -> preferences.get(IntNonKey.InsulinOrefPeak)
             else                       -> template.peak
         }
     }
+
+    fun getDefaultDia(): Double = if (numOfInsulins == 0) InsulinType.OREF_RAPID_ACTING.dia else insulins[defaultInsulinIndex].getDia()
 
     fun setCurrent(iCfg: ICfg): Int {
         // First Check insulin with hardlimits, and set default value if not consistent
@@ -154,6 +157,7 @@ class InsulinPlugin @Inject constructor(
                 return index
             }
         }
+        aapsLogger.debug("XXXXX addNewInsulin setCurrent")
         addNewInsulin(iCfg)
         currentInsulin = currentInsulin().deepClone()
         isEdited = currentInsulin.insulinTemplate == 0
@@ -194,6 +198,7 @@ class InsulinPlugin @Inject constructor(
         if (template.insulinLabel == "" || insulinLabelAlreadyExists(template.insulinLabel))
             template.insulinLabel = createNewInsulinLabel(template)
         val newInsulin = template.deepClone()
+        aapsLogger.debug("XXXXX add Insulin ${newInsulin.insulinLabel}")
         insulins.add(newInsulin)
         uel.log(Action.NEW_INSULIN, Sources.Insulin, value = ValueWithUnit.SimpleString(newInsulin.insulinLabel))
         currentInsulinIndex = insulins.size - 1
@@ -215,7 +220,7 @@ class InsulinPlugin @Inject constructor(
     }
 
     fun createNewInsulinLabel(iCfg: ICfg, currentIndex: Int = -1, template: InsulinType? = null): String {
-        val template = template ?:InsulinType.fromPeak(iCfg.insulinPeakTime)
+        val template = template ?: InsulinType.fromPeak(iCfg.insulinPeakTime)
         var insulinLabel = when (template) {
             InsulinType.OREF_FREE_PEAK -> "${rh.gs(template.label)}_${iCfg.getPeak()}_${iCfg.getDia()}"
             else                       -> "${rh.gs(template.label)}_${iCfg.getDia()}"
@@ -262,7 +267,9 @@ class InsulinPlugin @Inject constructor(
 
     override fun iobCalcForTreatment(bolus: BS, time: Long, iCfg: ICfg): Iob {
         if (iCfg.getPeak() < hardLimits.minPeak() || iCfg.getPeak() > hardLimits.maxPeak())
-            iCfg.setPeak(getTemplatePeak())
+            iCfg.setPeak(getDefaultPeak())
+        if (iCfg.getDia() < hardLimits.minDia() || iCfg.getDia() > hardLimits.maxDia())
+            iCfg.setDia(getDefaultDia())
         return iobCalc(bolus, time, iCfg.getPeak().toDouble(), iCfg.getDia())
     }
 
@@ -305,6 +312,11 @@ class InsulinPlugin @Inject constructor(
     override fun applyConfiguration(configuration: JSONObject) {
         insulins.clear()
         configuration.optJSONArray("insulins")?.let {
+            if (it.length() == 0) {   // new install
+                aapsLogger.debug("XXXXX addNewInsulin 0 Insulin Else")
+                addNewInsulin(InsulinType.OREF_RAPID_ACTING.getICfg())
+            }
+            aapsLogger.debug("XXXXX getOrCreate applyConf: ${it.length()}")
             for (index in 0 until (it.length())) {
                 try {
                     val o = it.getJSONObject(index)
@@ -345,6 +357,7 @@ class InsulinPlugin @Inject constructor(
         }
         return true
     }
+
     fun currentInsulin(): ICfg = insulins[currentInsulinIndex]
 
 }

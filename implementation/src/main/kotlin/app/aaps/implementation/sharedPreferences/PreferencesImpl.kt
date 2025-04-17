@@ -223,6 +223,10 @@ class PreferencesImpl @Inject constructor(
         sp.remove(String.format(Locale.ENGLISH, key.key, arguments))
     }
 
+    override fun remove(key: DoubleComposedNonPreferenceKey, vararg arguments: Any) {
+        sp.remove(String.format(Locale.ENGLISH, key.key, arguments))
+    }
+
     override fun isUnitDependent(key: String): Boolean =
         UnitDoubleKey.entries.any { it.key == key }
 

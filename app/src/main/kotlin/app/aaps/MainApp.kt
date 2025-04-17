@@ -11,6 +11,7 @@ import android.os.HandlerThread
 import androidx.lifecycle.ProcessLifecycleOwner
 import app.aaps.core.data.configuration.Constants
 import app.aaps.core.data.model.GlucoseUnit
+import app.aaps.core.data.model.ICfg
 import app.aaps.core.data.model.TE
 import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
@@ -33,8 +34,11 @@ import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.IntNonKey
 import app.aaps.core.keys.LongComposedKey
 import app.aaps.core.keys.StringKey
+import app.aaps.core.keys.StringNonKey
 import app.aaps.core.keys.UnitDoubleKey
 import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.keys.interfaces.StringNonPreferenceKey
+import app.aaps.core.objects.extensions.toJson
 import app.aaps.core.ui.extensions.runOnUiThread
 import app.aaps.core.ui.locale.LocaleHelper
 import app.aaps.core.utils.JsonHelper
@@ -50,6 +54,7 @@ import app.aaps.plugins.main.general.themes.ThemeSwitcherPlugin
 import app.aaps.plugins.main.profile.keys.ProfileComposedBooleanKey
 import app.aaps.plugins.main.profile.keys.ProfileComposedDoubleKey
 import app.aaps.plugins.main.profile.keys.ProfileComposedStringKey
+import app.aaps.plugins.main.profile.keys.ProfileIntKey
 import app.aaps.receivers.BTReceiver
 import app.aaps.receivers.ChargingStateReceiver
 import app.aaps.receivers.KeepAliveWorker
@@ -70,6 +75,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import org.json.JSONArray
 import org.json.JSONObject
 import rxdogtag2.RxDogTag
 import java.io.IOException
@@ -201,23 +207,26 @@ class MainApp : DaggerApplication() {
 
     private fun doMigrations() {
         // Migrate Insulin Plugin
+        var migrateInsulin = false
+        var insulinTemplate = Insulin.InsulinType.OREF_RAPID_ACTING
         if (sp.getBoolean("ConfigBuilder_INSULIN_InsulinOrefRapidActingPlugin_Enabled", false) || preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefRapidActingPlugin") ||
             sp.getBoolean("ConfigBuilder_INSULIN_InsulinOrefUltraRapidActingPlugin_Enabled", false) || preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefUltraRapidActingPlugin") ||
             sp.getBoolean("ConfigBuilder_INSULIN_InsulinLyumjevPlugin_Enabled", false) || preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinLyumjevPlugin") ||
             sp.getBoolean("ConfigBuilder_INSULIN_InsulinOrefFreePeakPlugin_Enabled", false) || preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefFreePeakPlugin")
         ) {
             aapsLogger.debug("XXXXX Migration InsulinPlugin")
+            migrateInsulin = true
             when {
                 sp.getBoolean("ConfigBuilder_INSULIN_InsulinOrefUltraRapidActingPlugin_Enabled", false) ||
-                    preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefUltraRapidActingPlugin") -> preferences.put(IntNonKey.InsulinTemplate, Insulin.InsulinType.OREF_ULTRA_RAPID_ACTING.value)
+                    preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefUltraRapidActingPlugin") -> insulinTemplate = Insulin.InsulinType.OREF_ULTRA_RAPID_ACTING
 
                 sp.getBoolean("ConfigBuilder_INSULIN_InsulinLyumjevPlugin_Enabled", false) ||
-                    preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinLyumjevPlugin")         -> preferences.put(IntNonKey.InsulinTemplate, Insulin.InsulinType.OREF_LYUMJEV.value)
+                    preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinLyumjevPlugin")              -> insulinTemplate = Insulin.InsulinType.OREF_LYUMJEV
 
                 sp.getBoolean("ConfigBuilder_INSULIN_InsulinOrefFreePeakPlugin_Enabled", false) ||
-                    preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefFreePeakPlugin")    -> preferences.put(IntNonKey.InsulinTemplate, Insulin.InsulinType.OREF_FREE_PEAK.value)
-                else                                                                                                              -> preferences.put(IntNonKey.InsulinTemplate, Insulin.InsulinType.OREF_RAPID_ACTING.value)
+                    preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefFreePeakPlugin")         -> insulinTemplate = Insulin.InsulinType.OREF_FREE_PEAK
             }
+            preferences.put(IntNonKey.InsulinTemplate, insulinTemplate.value)
             sp.remove("ConfigBuilder_INSULIN_InsulinOrefRapidActingPlugin_Enabled")
             sp.remove("ConfigBuilder_INSULIN_InsulinOrefRapidActingPlugin_Visible")
             sp.remove("ConfigBuilder_INSULIN_InsulinOrefUltraRapidActingPlugin_Enabled")
@@ -234,7 +243,7 @@ class MainApp : DaggerApplication() {
             preferences.remove(ConfigurationBooleanComposedKey.ConfigBuilderVisible, "INSULIN_InsulinOrefUltraRapidActingPlugin")
             preferences.remove(ConfigurationBooleanComposedKey.ConfigBuilderVisible, "INSULIN_InsulinLyumjevPlugin")
             preferences.remove(ConfigurationBooleanComposedKey.ConfigBuilderVisible, "INSULIN_InsulinOrefFreePeakPlugin")
-            preferences.put(ConfigurationBooleanComposedKey.ConfigBuilderVisible, "INSULIN_InsulinPlugin", value = true)
+            preferences.put(ConfigurationBooleanComposedKey.ConfigBuilderVisible, "INSULIN_InsulinPlugin", value = false)
             preferences.put(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinPlugin", value = true)
         }
 
@@ -375,16 +384,39 @@ class MainApp : DaggerApplication() {
                     preferences.put(ProfileComposedDoubleKey.LocalProfileNumberedDia, SafeParse.stringToInt(number), value = SafeParse.stringToDouble(value))
                     listDia.add(SafeParse.stringToDouble(value))
                 } else if (value is Float) {
-                    //preferences.put(ProfileComposedDoubleKey.LocalProfileNumberedDia, SafeParse.stringToInt(number), value = value.toDouble())
+                    preferences.put(ProfileComposedDoubleKey.LocalProfileNumberedDia, SafeParse.stringToInt(number), value = value.toDouble())
                     listDia.add(value.toDouble())
                 } else {
-                    //preferences.put(ProfileComposedDoubleKey.LocalProfileNumberedDia, SafeParse.stringToInt(number), value = value as Double)
+                    preferences.put(ProfileComposedDoubleKey.LocalProfileNumberedDia, SafeParse.stringToInt(number), value = value as Double)
                     listDia.add(value as Double)
                 }
                 sp.remove(key)
             }
         }
-
+        if (migrateInsulin) {
+            val numOfProfiles = preferences.get(ProfileIntKey.AmountOfProfiles)
+            for (i in 0 until numOfProfiles) {
+                preferences.get(ProfileComposedDoubleKey.LocalProfileNumberedDia, i).let {
+                    if (it != 0.0)
+                        listDia.add(it)
+                }
+                preferences.remove(ProfileComposedDoubleKey.LocalProfileNumberedDia, i)
+            }
+            val json = JSONObject()
+            val jsonArray = JSONArray()
+            aapsLogger.debug("XXXXX listDia: ${listDia.distinct()}")
+            listDia.distinct().forEach {
+                jsonArray.put(
+                    ICfg("",
+                        if (insulinTemplate == Insulin.InsulinType.OREF_FREE_PEAK) preferences.get(IntNonKey.InsulinOrefPeak) else insulinTemplate.peak,
+                        it,
+                        insulinTemplate.value
+                    ).toJson()
+                )
+            }
+            json.put("insulins", jsonArray)
+            preferences.put(StringKey.InsulinConfiguration, json.toString())
+        }
     }
 
     override fun applicationInjector(): AndroidInjector<out DaggerApplication> {

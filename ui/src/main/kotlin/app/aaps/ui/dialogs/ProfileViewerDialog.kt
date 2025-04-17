@@ -120,6 +120,9 @@ class ProfileViewerDialog : DaggerDialogFragment() {
                 binding.headerIcon.setImageResource(R.drawable.ic_compare_profiles)
                 date = ""
                 binding.dateLayout.visibility = View.GONE
+                binding.insulin.visibility = View.GONE
+                binding.peak.visibility = View.GONE
+                binding.dia.visibility = View.GONE
             }
 
             UiInteraction.Mode.DB_PROFILE      -> {

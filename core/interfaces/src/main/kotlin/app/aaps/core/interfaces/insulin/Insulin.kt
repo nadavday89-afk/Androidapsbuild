@@ -18,7 +18,7 @@ interface Insulin : ConfigExportImport {
         OREF_FREE_PEAK(4, 50, 6.0, R.string.free_peak_oref),
         OREF_LYUMJEV(5, 45, 6.0, R.string.lyumjev);
 
-        fun getICfg() = ICfg(this.name, peak, dia)
+        fun getICfg() = ICfg(this.name, peak, dia, value)
 
         companion object {
 
