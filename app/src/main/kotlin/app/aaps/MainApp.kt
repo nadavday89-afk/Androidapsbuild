@@ -214,7 +214,6 @@ class MainApp : DaggerApplication() {
             sp.getBoolean("ConfigBuilder_INSULIN_InsulinLyumjevPlugin_Enabled", false) || preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinLyumjevPlugin") ||
             sp.getBoolean("ConfigBuilder_INSULIN_InsulinOrefFreePeakPlugin_Enabled", false) || preferences.get(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, "INSULIN_InsulinOrefFreePeakPlugin")
         ) {
-            aapsLogger.debug("XXXXX Migration InsulinPlugin")
             migrateInsulin = true
             when {
                 sp.getBoolean("ConfigBuilder_INSULIN_InsulinOrefUltraRapidActingPlugin_Enabled", false) ||
@@ -404,7 +403,6 @@ class MainApp : DaggerApplication() {
             }
             val json = JSONObject()
             val jsonArray = JSONArray()
-            aapsLogger.debug("XXXXX listDia: ${listDia.distinct()}")
             listDia.distinct().forEach {
                 jsonArray.put(
                     ICfg("",

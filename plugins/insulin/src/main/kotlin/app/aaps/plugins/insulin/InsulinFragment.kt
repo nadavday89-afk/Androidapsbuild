@@ -100,7 +100,6 @@ class InsulinFragment : DaggerFragment() {
             }
         }
         if (insulinPlugin.numOfInsulins == 0) {
-            aapsLogger.debug("XXXXX getOrCreate fragment start 0")
             insulinPlugin.loadSettings()
         }
         insulinPlugin.setCurrent(insulinPlugin.iCfg)
@@ -231,7 +230,6 @@ class InsulinFragment : DaggerFragment() {
         binding.name.addTextChangedListener(textWatch)
         binding.insulinList.filters = arrayOf()
         binding.insulinList.setText(currentInsulin.insulinLabel)
-        aapsLogger.debug("XXXXX selectedTemplate $selectedTemplate")
         when (selectedTemplate) {
             Insulin.InsulinType.OREF_FREE_PEAK -> {
                 minPeak = hardLimits.minPeak().toDouble()

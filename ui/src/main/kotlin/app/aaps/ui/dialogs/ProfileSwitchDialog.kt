@@ -139,7 +139,6 @@ class ProfileSwitchDialog : DialogFragmentWithDate() {
                         binding.profileList.setText(profileList[p], false)
             }
             val currentICfg = profileFunction.getProfile()?.iCfg()?.let { iCfg ->
-                aapsLogger.debug("XXXXX getOrCreate ProfileSwitch Dialog start 0")
                 activePlugin.activeInsulin.getOrCreateInsulin(iCfg)
             }
             val insulinList = activePlugin.activeInsulin.insulinList()

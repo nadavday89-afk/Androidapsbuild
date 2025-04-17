@@ -25,7 +25,6 @@ import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.interfaces.utils.HardLimits
 import app.aaps.core.keys.IntNonKey
 import app.aaps.core.keys.StringKey
-import app.aaps.core.keys.StringNonKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.extensions.fromJson
 import app.aaps.core.objects.extensions.toJson
@@ -119,7 +118,6 @@ class InsulinPlugin @Inject constructor(
     }
 
     override fun getOrCreateInsulin(iCfg: ICfg): ICfg {
-        aapsLogger.debug("XXXXX numberOfInsulin $numOfInsulins")
         // First Check insulin with hardlimits, and set default value if not consistent
         if (iCfg.getPeak() < hardLimits.minPeak() || iCfg.getPeak() > hardLimits.maxPeak())
             iCfg.setPeak(getDefaultPeak())
@@ -130,7 +128,6 @@ class InsulinPlugin @Inject constructor(
                 return it
             }
         }
-        aapsLogger.debug("XXXXX addNewInsulin get not Found so Create")
         return addNewInsulin(iCfg.also {
             if (it.insulinTemplate == 0)
                 it.insulinTemplate = InsulinType.fromPeak(it.insulinPeakTime).value
@@ -157,7 +154,6 @@ class InsulinPlugin @Inject constructor(
                 return index
             }
         }
-        aapsLogger.debug("XXXXX addNewInsulin setCurrent")
         addNewInsulin(iCfg)
         currentInsulin = currentInsulin().deepClone()
         isEdited = currentInsulin.insulinTemplate == 0
@@ -194,11 +190,10 @@ class InsulinPlugin @Inject constructor(
         get() = rh.gs(R.string.dia_too_short)
 
     @Synchronized
-    fun addNewInsulin(template: ICfg): ICfg {
-        if (template.insulinLabel == "" || insulinLabelAlreadyExists(template.insulinLabel))
-            template.insulinLabel = createNewInsulinLabel(template)
-        val newInsulin = template.deepClone()
-        aapsLogger.debug("XXXXX add Insulin ${newInsulin.insulinLabel}")
+    fun addNewInsulin(newICfg: ICfg): ICfg {
+        if (newICfg.insulinLabel == "" || insulinLabelAlreadyExists(newICfg.insulinLabel))
+            newICfg.insulinLabel = createNewInsulinLabel(newICfg)
+        val newInsulin = newICfg.deepClone()
         insulins.add(newInsulin)
         uel.log(Action.NEW_INSULIN, Sources.Insulin, value = ValueWithUnit.SimpleString(newInsulin.insulinLabel))
         currentInsulinIndex = insulins.size - 1
@@ -304,7 +299,6 @@ class InsulinPlugin @Inject constructor(
             }
         }
         json.put("insulins", jsonArray)
-        json.put("current_insulin", currentInsulinIndex)
         return json
     }
 
@@ -313,10 +307,8 @@ class InsulinPlugin @Inject constructor(
         insulins.clear()
         configuration.optJSONArray("insulins")?.let {
             if (it.length() == 0) {   // new install
-                aapsLogger.debug("XXXXX addNewInsulin 0 Insulin Else")
                 addNewInsulin(InsulinType.OREF_RAPID_ACTING.getICfg())
             }
-            aapsLogger.debug("XXXXX getOrCreate applyConf: ${it.length()}")
             for (index in 0 until (it.length())) {
                 try {
                     val o = it.getJSONObject(index)
@@ -326,8 +318,6 @@ class InsulinPlugin @Inject constructor(
                 }
             }
         }
-        if (insulins.isEmpty())
-            currentInsulinIndex = configuration.optInt("current_insulin")
     }
 
     @Synchronized
