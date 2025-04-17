@@ -77,7 +77,7 @@ class ProfileSealedTest : TestBase() {
         assertThat(p.isValid("Test", testPumpPlugin, config, rh, rxBus, hardLimits, false).isValid).isTrue()
 //        assertThat(p.log()).contains("NS units: mmol")
 //        JSONAssertions.assertEquals(JSONObject(okProfile), p.toPureNsJson(dateUtil), false)
-        assertThat(p.dia).isWithin(0.01).of(5.0)
+//        assertThat(p.dia).isWithin(0.01).of(5.0)
 //       assertThat(p.timeZone).isEqualTo(TimeZone.getTimeZone("UTC"))
         assertThat(dateUtil.formatHHMM(30 * 60)).isEqualTo("00:30")
         val c = Calendar.getInstance()

@@ -1,6 +1,7 @@
 package app.aaps.plugins.main.extensions
 
 import app.aaps.core.data.aps.SMBDefaults
+import app.aaps.core.data.model.ICfg
 import app.aaps.core.data.model.TB
 import app.aaps.core.data.time.T
 import app.aaps.core.interfaces.aps.AutosensResult
@@ -32,6 +33,7 @@ class TemporaryBasalExtensionKtTest : TestBaseWithProfile() {
         insulin = InsulinPlugin(preferences, rh, profileFunctions, rxBus, aapsLogger, config, hardLimits, uiInteraction, uel, activePlugin)
         Mockito.`when`(activePlugin.activeInsulin).thenReturn(insulin)
         Mockito.`when`(dateUtil.now()).thenReturn(now)
+        validProfile.iCfg = ICfg("",45,7.0)
     }
 
     @Test

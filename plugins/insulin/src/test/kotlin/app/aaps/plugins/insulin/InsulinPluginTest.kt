@@ -6,7 +6,9 @@ import app.aaps.core.data.model.BS
 import app.aaps.core.data.model.ICfg
 import app.aaps.core.interfaces.insulin.Insulin
 import app.aaps.core.interfaces.logging.UserEntryLogger
+import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.ui.UiInteraction
+import app.aaps.core.objects.profile.ProfileSealed
 import app.aaps.core.validators.preferences.AdaptiveIntPreference
 import app.aaps.shared.tests.TestBaseWithProfile
 import com.google.common.truth.Truth.assertThat
@@ -47,7 +49,7 @@ class InsulinPluginTest: TestBaseWithProfile() {
 
     @Test
     fun `simple peak test`() {
-        `when`(profileFunction.getProfile()).thenReturn(validProfile)
+        `when`(profileFunction.getProfile()).thenReturn(validProfile2)
         assertThat(sut.iCfg.getPeak()).isEqualTo(75)
     }
 
