@@ -348,6 +348,16 @@ class InsulinPlugin @Inject constructor(
         return true
     }
 
+    override fun isValid(testICfg: ICfg): Boolean {
+        with(testICfg) {
+            if (getDia() < hardLimits.minDia() || getDia() > hardLimits.maxDia())
+                return false
+            if (getPeak() < hardLimits.minPeak() || getPeak() > hardLimits.maxPeak())
+                return false
+        }
+        return true
+    }
+
     fun currentInsulin(): ICfg = insulins[currentInsulinIndex]
 
 }

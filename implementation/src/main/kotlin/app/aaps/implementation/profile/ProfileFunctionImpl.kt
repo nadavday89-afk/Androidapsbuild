@@ -159,7 +159,7 @@ class ProfileFunctionImpl @Inject constructor(
             timeshift = T.hours(timeShiftInHours.toLong()).msecs(),
             percentage = percentage,
             duration = T.mins(durationInMinutes.toLong()).msecs(),
-            iCfg = iCfg
+            iCfg = if (activePlugin.activeInsulin.isValid(iCfg)) iCfg else activePlugin.activeInsulin.iCfg
         )
     }
 
