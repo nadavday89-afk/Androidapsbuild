@@ -190,12 +190,13 @@ class InsulinPlugin @Inject constructor(
         get() = rh.gs(R.string.dia_too_short)
 
     @Synchronized
-    fun addNewInsulin(newICfg: ICfg): ICfg {
+    fun addNewInsulin(newICfg: ICfg, ue: Boolean = true): ICfg {
         if (newICfg.insulinLabel == "" || insulinLabelAlreadyExists(newICfg.insulinLabel))
             newICfg.insulinLabel = createNewInsulinLabel(newICfg)
         val newInsulin = newICfg.deepClone()
         insulins.add(newInsulin)
-        uel.log(Action.NEW_INSULIN, Sources.Insulin, value = ValueWithUnit.SimpleString(newInsulin.insulinLabel))
+        if (ue)
+            uel.log(Action.NEW_INSULIN, Sources.Insulin, value = ValueWithUnit.SimpleString(newInsulin.insulinLabel))
         currentInsulinIndex = insulins.size - 1
         currentInsulin = newInsulin.deepClone()
         storeSettings()
@@ -311,8 +312,8 @@ class InsulinPlugin @Inject constructor(
             }
             for (index in 0 until (it.length())) {
                 try {
-                    val o = it.getJSONObject(index)
-                    getOrCreateInsulin(ICfg.fromJson(o))
+                    val newICfg = ICfg.fromJson(it.getJSONObject(index))
+                    addNewInsulin(newICfg, newICfg.insulinLabel.isEmpty())
                 } catch (e: Exception) {
                     //
                 }
