@@ -50,8 +50,8 @@ import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.DoubleKey
 import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.IntentKey
-import app.aaps.core.keys.Preferences
 import app.aaps.core.keys.UnitDoubleKey
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.aps.DetermineBasalResult
 import app.aaps.core.objects.constraints.ConstraintObject
 import app.aaps.core.objects.extensions.convertedToAbsolute
@@ -137,7 +137,7 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
     private val smb_delivery_ratio_min; get() = preferences.get(DoubleKey.ApsAutoIsfSmbDeliveryRatioMin)
     private val smb_delivery_ratio_max; get() = preferences.get(DoubleKey.ApsAutoIsfSmbDeliveryRatioMax)
     private val smb_delivery_ratio_bg_range
-        get() = if (preferences.get(UnitDoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange) < 10.0) preferences.get(UnitDoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange) * GlucoseUnit.MMOLL_TO_MGDL else preferences.get(UnitDoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange)
+        get() = if (preferences.get(DoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange) < 10.0) preferences.get(DoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange) * GlucoseUnit.MMOLL_TO_MGDL else preferences.get(DoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange)
     val smbMaxRangeExtension; get() = preferences.get(DoubleKey.ApsAutoIsfSmbMaxRangeExtension)
     private val enableSMB_EvenOn_OddOff_always; get() = preferences.get(BooleanKey.ApsAutoIsfSmbOnEvenTarget) // for profile target
     val iobThresholdPercent; get() = preferences.get(IntKey.ApsAutoIsfIobThPercent)
@@ -145,7 +145,6 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
     private val highTemptargetRaisesSensitivity; get() = preferences.get(BooleanKey.ApsAutoIsfHighTtRaisesSens)
     val normalTarget = 100
     private val minutesClass; get() = if (preferences.get(IntKey.ApsMaxSmbFrequency) == 1) 6L else 30L  // ga-zelle: later get correct 1 min CGM flag from glucoseStatus ? ... or from apsResults?
-
 
     override fun onStart() {
         super.onStart()
@@ -193,6 +192,8 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
         aapsLogger.debug(LTag.APS, "getAverageIsfMgdl() $sensitivity from $count values ${dateUtil.dateAndTimeAndSecondsString(timestamp)} $caller")
         return sensitivity
     }
+
+    override fun getSensitivityOverviewString(): String? = null // placeholder for Auto ISF Detailed information for overview
 
     override fun specialEnableCondition(): Boolean {
         return config.isEngineeringMode() && config.isDev() &&
@@ -381,7 +382,7 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
             smb_delivery_ratio = smb_delivery_ratio,
             smb_delivery_ratio_min = smb_delivery_ratio_min,
             smb_delivery_ratio_max = smb_delivery_ratio_max,
-            smb_delivery_ratio_bg_range = smb_delivery_ratio_bg_range,
+            smb_delivery_ratio_bg_range = preferences.get(DoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange),   //smb_delivery_ratio_bg_range was always in mg/dL
             smb_max_range_extension = smbMaxRangeExtension,
             enableSMB_EvenOn_OddOff_always = enableSMB_EvenOn_OddOff_always,
             iob_threshold_percent = iobThresholdPercent,
@@ -839,6 +840,19 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
     }
 
     fun loop_smb(microBolusAllowed: Boolean, profile: OapsProfileAutoIsf, iob_data_iob: Double, useIobTh: Boolean, iobThEffective: Double): String {
+        val iobThUser = preferences.get(IntKey.ApsAutoIsfIobThPercent)  //iobThresholdPercent
+        if (useIobTh) {
+            val iobThPercent = round(iobThEffective / profile.max_iob * 100.0, 0)
+            if (iobThPercent == iobThUser.toDouble()) {
+                consoleLog.add("User setting iobTH=$iobThUser% not modulated")
+            } else {
+                consoleLog.add("User setting iobTH=$iobThUser% modulated to ${iobThPercent.toInt()}% or ${round(iobThEffective, 2)}U")
+                consoleLog.add("  due to profile %, exercise mode or similar")
+            }
+        } else {
+            consoleLog.add("User setting iobTH=100% disables iobTH method")
+        }
+
         if (!microBolusAllowed) {
             return "AAPS"                                                 // see message in enable_smb
         }
@@ -861,19 +875,6 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
                 msgTail = "number"
             }
             val msgEven: String = if (evenTarget) "even" else "odd"
-
-            val iobThUser = preferences.get(IntKey.ApsAutoIsfIobThPercent)  //iobThresholdPercent
-            if (useIobTh) {
-                val iobThPercent = round(iobThEffective / profile.max_iob * 100.0, 0)
-                if (iobThPercent == iobThUser.toDouble()) {
-                    consoleLog.add("User setting iobTH=$iobThUser% not modulated")
-                } else {
-                    consoleLog.add("User setting iobTH=$iobThUser% modulated to ${iobThPercent.toInt()}% or ${round(iobThEffective, 2)}U")
-                    consoleLog.add("  due to profile %, exercise mode or similar")
-                }
-            } else {
-                consoleLog.add("User setting iobTH=100% disables iobTH method")
-            }
 
             if (!evenTarget) {
                 consoleLog.add("SMB disabled; current target $target $msgUnits $msgEven $msgTail")
@@ -1007,14 +1008,7 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
                     addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfSmbDeliveryRatio, dialogMessage = R.string.openapsama_smb_delivery_ratio_summary, title = R.string.openapsama_smb_delivery_ratio))
                     addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfSmbDeliveryRatioMin, dialogMessage = R.string.openapsama_smb_delivery_ratio_min_summary, title = R.string.openapsama_smb_delivery_ratio_min))
                     addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfSmbDeliveryRatioMax, dialogMessage = R.string.openapsama_smb_delivery_ratio_max_summary, title = R.string.openapsama_smb_delivery_ratio_max))
-                    addPreference(
-                        AdaptiveUnitPreference(
-                            ctx = context,
-                            unitKey = UnitDoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange,
-                            dialogMessage = R.string.openapsama_smb_delivery_ratio_bg_range_summary,
-                            title = R.string.openapsama_smb_delivery_ratio_bg_range
-                        )
-                    )
+                    addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange, dialogMessage = R.string.openapsama_smb_delivery_ratio_bg_range_summary, title = R.string.openapsama_smb_delivery_ratio_bg_range))
                     addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfSmbMaxRangeExtension, dialogMessage = R.string.openapsama_smb_max_range_extension_summary, title = R.string.openapsama_smb_max_range_extension))
                     addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.ApsAutoIsfSmbOnEvenTarget, summary = R.string.enableSMB_EvenOn_OddOff_always_summary, title = R.string.enableSMB_EvenOn_OddOff_always))
                 })

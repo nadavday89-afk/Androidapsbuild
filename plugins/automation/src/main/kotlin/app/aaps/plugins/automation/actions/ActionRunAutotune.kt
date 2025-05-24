@@ -10,7 +10,7 @@ import app.aaps.core.interfaces.queue.Callback
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.IntKey
-import app.aaps.core.keys.Preferences
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.ui.elements.WeekDay
 import app.aaps.core.utils.JsonHelper
 import app.aaps.plugins.automation.R
@@ -38,7 +38,7 @@ class ActionRunAutotune(injector: HasAndroidInjector) : Action(injector) {
 
     override fun friendlyName(): Int = R.string.autotune_run
     override fun shortDescription(): String = resourceHelper.gs(R.string.autotune_profile_name, inputProfileName.value)
-    @DrawableRes override fun icon(): Int = app.aaps.core.ui.R.drawable.ic_actions_profileswitch
+    @DrawableRes override fun icon(): Int = app.aaps.core.ui.R.drawable.ic_actions_profileswitch_24dp
 
     override fun doAction(callback: Callback) {
         val autoSwitch = preferences.get(BooleanKey.AutotuneAutoSwitchProfile)

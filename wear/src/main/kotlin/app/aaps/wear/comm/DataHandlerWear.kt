@@ -24,13 +24,14 @@ import app.aaps.core.interfaces.sharedPreferences.SP
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.DoubleKey
 import app.aaps.core.keys.IntKey
-import app.aaps.core.keys.Preferences
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.wear.R
 import app.aaps.wear.interaction.WatchfaceConfigurationActivity
 import app.aaps.wear.interaction.actions.AcceptActivity
 import app.aaps.wear.interaction.actions.ProfileSwitchActivity
 import app.aaps.wear.interaction.utils.Persistence
 import app.aaps.wear.tile.ActionsTileService
+import app.aaps.wear.tile.LoopStateTileService
 import app.aaps.wear.tile.QuickWizardTileService
 import app.aaps.wear.tile.TempTargetTileService
 import app.aaps.wear.tile.UserActionTileService
@@ -191,6 +192,17 @@ class DataHandlerWear @Inject constructor(
                 if (serialized != sp.getString(R.string.key_user_action_data, "")) {
                     sp.putString(R.string.key_user_action_data, serialized)
                     TileService.getUpdater(context).requestUpdate(UserActionTileService::class.java)
+                }
+            }
+        disposable += rxBus
+            .toObservable(EventData.LoopStatesList::class.java)
+            .observeOn(aapsSchedulers.io)
+            .subscribe {
+                aapsLogger.debug(LTag.WEAR, "Loop states received from ${it.sourceNodeId}")
+                val serialized = it.serialize()
+                if (serialized != sp.getString(R.string.key_loop_states_data, "")) {
+                    sp.putString(R.string.key_loop_states_data, serialized)
+                    TileService.getUpdater(context).requestUpdate(LoopStateTileService::class.java)
                 }
             }
         disposable += rxBus

@@ -47,6 +47,7 @@ import app.aaps.database.transactions.InsertIfNewByTimestampTherapyEventTransact
 import app.aaps.database.transactions.InsertOrUpdateApsResultTransaction
 import app.aaps.database.transactions.InsertOrUpdateBolusCalculatorResultTransaction
 import app.aaps.database.transactions.InsertOrUpdateBolusTransaction
+import app.aaps.database.transactions.InsertOrUpdateCachedTotalDailyDoseTransaction
 import app.aaps.database.transactions.InsertOrUpdateCarbsTransaction
 import app.aaps.database.transactions.InsertOrUpdateHeartRateTransaction
 import app.aaps.database.transactions.InsertOrUpdateProfileSwitch
@@ -110,7 +111,6 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlin.collections.filterNotNull
 
 @Reusable
 class PersistenceLayerImpl @Inject constructor(
@@ -135,7 +135,7 @@ class PersistenceLayerImpl @Inject constructor(
         fun log(entries: List<UE>) {
             compositeDisposable += insertUserEntries(entries).subscribe()
         }
-        if (config.NSCLIENT.not())
+        if (config.AAPSCLIENT.not())
             log(listOf(UE(timestamp = timestamp, action = action, source = source, note = note ?: "", values = listValues.toList())))
     }
 
@@ -253,13 +253,13 @@ class PersistenceLayerImpl @Inject constructor(
                 transactionResult
             }
 
-    override fun syncNsBolus(boluses: List<BS>): Single<PersistenceLayer.TransactionResult<BS>> =
+    override fun syncNsBolus(boluses: List<BS>, doLog: Boolean): Single<PersistenceLayer.TransactionResult<BS>> =
         repository.runTransactionForResult(SyncNsBolusTransaction(boluses.asSequence().map { it.toDb() }.toList()))
             .doOnError { aapsLogger.error(LTag.DATABASE, "Error while saving bolus", it) }
             .map { result ->
                 val transactionResult = PersistenceLayer.TransactionResult<BS>()
                 result.inserted.forEach {
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.BOLUS,
                         source = Sources.NSClient,
@@ -270,7 +270,7 @@ class PersistenceLayerImpl @Inject constructor(
                     transactionResult.inserted.add(it.fromDb())
                 }
                 result.invalidated.forEach {
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.BOLUS_REMOVED,
                         source = Sources.NSClient,
@@ -407,13 +407,13 @@ class PersistenceLayerImpl @Inject constructor(
                 transactionResult
             }
 
-    override fun syncNsCarbs(carbs: List<CA>): Single<PersistenceLayer.TransactionResult<CA>> =
-        repository.runTransactionForResult(SyncNsCarbsTransaction(carbs.asSequence().map { it.toDb() }.toList(), config.NSCLIENT))
+    override fun syncNsCarbs(carbs: List<CA>, doLog: Boolean): Single<PersistenceLayer.TransactionResult<CA>> =
+        repository.runTransactionForResult(SyncNsCarbsTransaction(carbs.asSequence().map { it.toDb() }.toList(), config.AAPSCLIENT))
             .doOnError { aapsLogger.error(LTag.DATABASE, "Error while saving carbs", it) }
             .map { result ->
                 val transactionResult = PersistenceLayer.TransactionResult<CA>()
                 result.inserted.forEach {
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.CARBS,
                         source = Sources.NSClient,
@@ -424,7 +424,7 @@ class PersistenceLayerImpl @Inject constructor(
                     transactionResult.inserted.add(it.fromDb())
                 }
                 result.invalidated.forEach {
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.CARBS_REMOVED,
                         source = Sources.NSClient,
@@ -435,7 +435,7 @@ class PersistenceLayerImpl @Inject constructor(
                     transactionResult.invalidated.add(it.fromDb())
                 }
                 result.updated.forEach {
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.CARBS,
                         source = Sources.NSClient,
@@ -723,14 +723,14 @@ class PersistenceLayerImpl @Inject constructor(
                 transactionResult
             }
 
-    override fun syncNsEffectiveProfileSwitches(effectiveProfileSwitches: List<EPS>): Single<PersistenceLayer.TransactionResult<EPS>> =
+    override fun syncNsEffectiveProfileSwitches(effectiveProfileSwitches: List<EPS>, doLog: Boolean): Single<PersistenceLayer.TransactionResult<EPS>> =
         repository.runTransactionForResult(SyncNsEffectiveProfileSwitchTransaction(effectiveProfileSwitches.map { it.toDb() }))
             .doOnError { aapsLogger.error(LTag.DATABASE, "Error while saving EffectiveProfileSwitch", it) }
             .map { result ->
                 val transactionResult = PersistenceLayer.TransactionResult<EPS>()
                 result.inserted.forEach {
-                    if (config.NSCLIENT.not())
-                        log(
+                    if (config.AAPSCLIENT.not())
+                        if (doLog) log(
                             timestamp = dateUtil.now(),
                             action = Action.PROFILE_SWITCH,
                             source = Sources.NSClient,
@@ -741,8 +741,8 @@ class PersistenceLayerImpl @Inject constructor(
                     transactionResult.inserted.add(it.fromDb())
                 }
                 result.invalidated.forEach {
-                    if (config.NSCLIENT.not())
-                        log(
+                    if (config.AAPSCLIENT.not())
+                        if (doLog) log(
                             timestamp = dateUtil.now(),
                             action = Action.PROFILE_SWITCH_REMOVED,
                             source = Sources.NSClient,
@@ -827,14 +827,14 @@ class PersistenceLayerImpl @Inject constructor(
                 transactionResult
             }
 
-    override fun syncNsProfileSwitches(profileSwitches: List<PS>): Single<PersistenceLayer.TransactionResult<PS>> =
+    override fun syncNsProfileSwitches(profileSwitches: List<PS>, doLog: Boolean): Single<PersistenceLayer.TransactionResult<PS>> =
         repository.runTransactionForResult(SyncNsProfileSwitchTransaction(profileSwitches.map { it.toDb() }))
             .doOnError { aapsLogger.error(LTag.DATABASE, "Error while saving ProfileSwitch", it) }
             .map { result ->
                 val transactionResult = PersistenceLayer.TransactionResult<PS>()
                 result.inserted.forEach {
-                    if (config.NSCLIENT.not())
-                        log(
+                    if (config.AAPSCLIENT.not())
+                        if (doLog) log(
                             timestamp = dateUtil.now(),
                             action = Action.PROFILE_SWITCH,
                             source = Sources.NSClient,
@@ -845,8 +845,8 @@ class PersistenceLayerImpl @Inject constructor(
                     transactionResult.inserted.add(it.fromDb())
                 }
                 result.invalidated.forEach {
-                    if (config.NSCLIENT.not())
-                        log(
+                    if (config.AAPSCLIENT.not())
+                        if (doLog) log(
                             timestamp = dateUtil.now(),
                             action = Action.PROFILE_SWITCH_REMOVED,
                             source = Sources.NSClient,
@@ -918,13 +918,13 @@ class PersistenceLayerImpl @Inject constructor(
                 transactionResult
             }
 
-    override fun syncNsTemporaryBasals(temporaryBasals: List<TB>): Single<PersistenceLayer.TransactionResult<TB>> =
-        repository.runTransactionForResult(SyncNsTemporaryBasalTransaction(temporaryBasals.asSequence().map { it.toDb() }.toList(), config.NSCLIENT))
+    override fun syncNsTemporaryBasals(temporaryBasals: List<TB>, doLog: Boolean): Single<PersistenceLayer.TransactionResult<TB>> =
+        repository.runTransactionForResult(SyncNsTemporaryBasalTransaction(temporaryBasals.asSequence().map { it.toDb() }.toList(), config.AAPSCLIENT))
             .doOnError { aapsLogger.error(LTag.DATABASE, "Error while saving TemporaryBasal", it) }
             .map { result ->
                 val transactionResult = PersistenceLayer.TransactionResult<TB>()
                 result.inserted.forEach {
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.TEMP_BASAL,
                         source = Sources.NSClient,
@@ -939,7 +939,7 @@ class PersistenceLayerImpl @Inject constructor(
                     transactionResult.inserted.add(it.fromDb())
                 }
                 result.invalidated.forEach {
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.TEMP_BASAL_REMOVED,
                         source = Sources.NSClient,
@@ -954,7 +954,7 @@ class PersistenceLayerImpl @Inject constructor(
                     transactionResult.invalidated.add(it.fromDb())
                 }
                 result.ended.forEach {
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.CANCEL_TEMP_BASAL,
                         source = Sources.NSClient,
@@ -1107,13 +1107,13 @@ class PersistenceLayerImpl @Inject constructor(
                 transactionResult
             }
 
-    override fun syncNsExtendedBoluses(extendedBoluses: List<EB>): Single<PersistenceLayer.TransactionResult<EB>> =
-        repository.runTransactionForResult(SyncNsExtendedBolusTransaction(extendedBoluses.asSequence().map { it.toDb() }.toList(), config.NSCLIENT))
+    override fun syncNsExtendedBoluses(extendedBoluses: List<EB>, doLog: Boolean): Single<PersistenceLayer.TransactionResult<EB>> =
+        repository.runTransactionForResult(SyncNsExtendedBolusTransaction(extendedBoluses.asSequence().map { it.toDb() }.toList(), config.AAPSCLIENT))
             .doOnError { aapsLogger.error(LTag.DATABASE, "Error while saving ExtendedBolus", it) }
             .map { result ->
                 val transactionResult = PersistenceLayer.TransactionResult<EB>()
                 result.inserted.forEach {
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.EXTENDED_BOLUS,
                         source = Sources.NSClient,
@@ -1129,7 +1129,7 @@ class PersistenceLayerImpl @Inject constructor(
                     transactionResult.inserted.add(it.fromDb())
                 }
                 result.invalidated.forEach {
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.EXTENDED_BOLUS_REMOVED,
                         source = Sources.NSClient,
@@ -1145,7 +1145,7 @@ class PersistenceLayerImpl @Inject constructor(
                     transactionResult.invalidated.add(it.fromDb())
                 }
                 result.ended.forEach {
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.CANCEL_EXTENDED_BOLUS,
                         source = Sources.NSClient,
@@ -1233,55 +1233,55 @@ class PersistenceLayerImpl @Inject constructor(
                 transactionResult
             }
 
-    override fun syncNsTemporaryTargets(temporaryTargets: List<TT>): Single<PersistenceLayer.TransactionResult<TT>> =
+    override fun syncNsTemporaryTargets(temporaryTargets: List<TT>, doLog: Boolean): Single<PersistenceLayer.TransactionResult<TT>> =
         repository.runTransactionForResult(SyncNsTemporaryTargetTransaction(temporaryTargets.asSequence().map { it.toDb() }.toList()))
             .doOnError { aapsLogger.error(LTag.DATABASE, "Error while saving TemporaryTarget", it) }
             .map { result ->
                 val transactionResult = PersistenceLayer.TransactionResult<TT>()
                 result.inserted.forEach { tt ->
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.TT,
                         source = Sources.NSClient,
                         note = "",
-                        listValues = listOf(
+                        listValues = listOfNotNull(
                             ValueWithUnit.TETTReason(tt.reason.fromDb()),
                             ValueWithUnit.fromGlucoseUnit(tt.lowTarget, GlucoseUnit.MGDL),
                             ValueWithUnit.fromGlucoseUnit(tt.highTarget, GlucoseUnit.MGDL).takeIf { tt.lowTarget != tt.highTarget },
                             ValueWithUnit.Minute(TimeUnit.MILLISECONDS.toMinutes(tt.duration).toInt())
-                        ).filterNotNull()
+                        )
                     )
                     aapsLogger.debug(LTag.DATABASE, "Inserted TemporaryTarget from ${Sources.NSClient.name} $tt")
                     transactionResult.inserted.add(tt.fromDb())
                 }
                 result.invalidated.forEach { tt ->
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.TT_REMOVED,
                         source = Sources.NSClient,
                         note = "",
-                        listValues = listOf(
+                        listValues = listOfNotNull(
                             ValueWithUnit.TETTReason(tt.reason.fromDb()),
                             ValueWithUnit.Mgdl(tt.lowTarget),
                             ValueWithUnit.Mgdl(tt.highTarget).takeIf { tt.lowTarget != tt.highTarget },
                             ValueWithUnit.Minute(TimeUnit.MILLISECONDS.toMinutes(tt.duration).toInt())
-                        ).filterNotNull()
+                        )
                     )
                     aapsLogger.debug(LTag.DATABASE, "Invalidated TemporaryTarget from ${Sources.NSClient.name} $tt")
                     transactionResult.invalidated.add(tt.fromDb())
                 }
                 result.ended.forEach { tt ->
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.CANCEL_TT,
                         source = Sources.NSClient,
                         note = "",
-                        listValues = listOf(
+                        listValues = listOfNotNull(
                             ValueWithUnit.TETTReason(tt.reason.fromDb()),
                             ValueWithUnit.Mgdl(tt.lowTarget),
                             ValueWithUnit.Mgdl(tt.highTarget).takeIf { tt.lowTarget != tt.highTarget },
                             ValueWithUnit.Minute(TimeUnit.MILLISECONDS.toMinutes(tt.duration).toInt())
-                        ).filterNotNull()
+                        )
                     )
                     aapsLogger.debug(LTag.DATABASE, "Ended TemporaryTarget from ${Sources.NSClient.name} $tt")
                     transactionResult.ended.add(tt.fromDb())
@@ -1375,8 +1375,8 @@ class PersistenceLayerImpl @Inject constructor(
                 transactionResult
             }
 
-    override fun syncNsTherapyEvents(therapyEvents: List<TE>): Single<PersistenceLayer.TransactionResult<TE>> =
-        repository.runTransactionForResult(SyncNsTherapyEventTransaction(therapyEvents.asSequence().map { it.toDb() }.toList(), config.NSCLIENT))
+    override fun syncNsTherapyEvents(therapyEvents: List<TE>, doLog: Boolean): Single<PersistenceLayer.TransactionResult<TE>> =
+        repository.runTransactionForResult(SyncNsTherapyEventTransaction(therapyEvents.asSequence().map { it.toDb() }.toList(), config.AAPSCLIENT))
             .doOnError { aapsLogger.error(LTag.DATABASE, "Error while saving TherapyEvent", it) }
             .map { result ->
                 val transactionResult = PersistenceLayer.TransactionResult<TE>()
@@ -1386,31 +1386,31 @@ class PersistenceLayerImpl @Inject constructor(
                         TherapyEvent.Type.INSULIN_CHANGE -> Action.RESERVOIR_CHANGE
                         else                             -> Action.CAREPORTAL
                     }
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = action,
                         source = Sources.NSClient,
                         note = therapyEvent.note ?: "",
-                        listValues = listOf(
+                        listValues = listOfNotNull(
                             ValueWithUnit.Timestamp(therapyEvent.timestamp),
                             ValueWithUnit.TEType(therapyEvent.type.fromDb()),
                             ValueWithUnit.fromGlucoseUnit(therapyEvent.glucose ?: 0.0, therapyEvent.glucoseUnit.fromDb()).takeIf { therapyEvent.glucose != null }
-                        ).filterNotNull()
+                        )
                     )
                     aapsLogger.debug(LTag.DATABASE, "Inserted TherapyEvent from ${Sources.NSClient.name} $therapyEvent")
                     transactionResult.inserted.add(therapyEvent.fromDb())
                 }
                 result.invalidated.forEach { therapyEvent ->
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.CAREPORTAL_REMOVED,
                         source = Sources.NSClient,
                         note = therapyEvent.note ?: "",
-                        listValues = listOf(
+                        listValues = listOfNotNull(
                             ValueWithUnit.Timestamp(therapyEvent.timestamp),
                             ValueWithUnit.TEType(therapyEvent.type.fromDb()),
                             ValueWithUnit.fromGlucoseUnit(therapyEvent.glucose ?: 0.0, therapyEvent.glucoseUnit.fromDb()).takeIf { therapyEvent.glucose != null }
-                        ).filterNotNull()
+                        )
                     )
                     aapsLogger.debug(LTag.DATABASE, "Invalidated TherapyEvent from ${Sources.NSClient.name} $therapyEvent")
                     transactionResult.invalidated.add(therapyEvent.fromDb())
@@ -1498,13 +1498,13 @@ class PersistenceLayerImpl @Inject constructor(
                 transactionResult
             }
 
-    override fun syncNsOfflineEvents(offlineEvents: List<OE>): Single<PersistenceLayer.TransactionResult<OE>> =
-        repository.runTransactionForResult(SyncNsOfflineEventTransaction(offlineEvents.asSequence().map { it.toDb() }.toList(), config.NSCLIENT))
+    override fun syncNsOfflineEvents(offlineEvents: List<OE>, doLog: Boolean): Single<PersistenceLayer.TransactionResult<OE>> =
+        repository.runTransactionForResult(SyncNsOfflineEventTransaction(offlineEvents.asSequence().map { it.toDb() }.toList(), config.AAPSCLIENT))
             .doOnError { aapsLogger.error(LTag.DATABASE, "Error while saving OfflineEvent", it) }
             .map { result ->
                 val transactionResult = PersistenceLayer.TransactionResult<OE>()
                 result.inserted.forEach { oe ->
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.LOOP_CHANGE,
                         source = Sources.NSClient,
@@ -1518,7 +1518,7 @@ class PersistenceLayerImpl @Inject constructor(
                     transactionResult.inserted.add(oe.fromDb())
                 }
                 result.invalidated.forEach { oe ->
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.LOOP_REMOVED,
                         source = Sources.NSClient,
@@ -1532,7 +1532,7 @@ class PersistenceLayerImpl @Inject constructor(
                     transactionResult.invalidated.add(oe.fromDb())
                 }
                 result.ended.forEach { oe ->
-                    log(
+                    if (doLog) log(
                         timestamp = dateUtil.now(),
                         action = Action.LOOP_CHANGE,
                         source = Sources.NSClient,
@@ -1709,10 +1709,25 @@ class PersistenceLayerImpl @Inject constructor(
     override fun getCalculatedTotalDailyDose(timestamp: Long): TDD? =
         repository.getCalculatedTotalDailyDose(timestamp).map { it.fromDb() }.blockingGet()
 
-    override fun insertTotalDailyDose(totalDailyDose: TDD) {
-        repository.insertTotalDailyDose(totalDailyDose.toDb())
-        aapsLogger.debug(LTag.DATABASE, "Inserted TDD $totalDailyDose")
-    }
+    override fun insertOrUpdateCachedTotalDailyDose(totalDailyDose: TDD): Single<PersistenceLayer.TransactionResult<TDD>> =
+        repository.runTransactionForResult(InsertOrUpdateCachedTotalDailyDoseTransaction(totalDailyDose.toDb()))
+            .doOnError { aapsLogger.error(LTag.DATABASE, "Error while saving TotalDailyDose $it") }
+            .map { result ->
+                val transactionResult = PersistenceLayer.TransactionResult<TDD>()
+                result.inserted.forEach {
+                    aapsLogger.debug(LTag.DATABASE, "Inserted TotalDailyDose ${dateUtil.dateString(it.timestamp)} $it")
+                    transactionResult.inserted.add(it.fromDb())
+                }
+                result.updated.forEach {
+                    aapsLogger.debug(LTag.DATABASE, "Updated TotalDailyDose ${dateUtil.dateString(it.timestamp)} $it")
+                    transactionResult.updated.add(it.fromDb())
+                }
+                result.notUpdated.forEach {
+                    aapsLogger.debug(LTag.DATABASE, "Not updated TotalDailyDose ${dateUtil.dateString(it.timestamp)} $it")
+                    transactionResult.updated.add(it.fromDb())
+                }
+                transactionResult
+            }
 
     override fun insertOrUpdateTotalDailyDose(totalDailyDose: TDD): Single<PersistenceLayer.TransactionResult<TDD>> =
         repository.runTransactionForResult(SyncPumpTotalDailyDoseTransaction(totalDailyDose.toDb()))

@@ -42,8 +42,8 @@ import app.aaps.core.interfaces.rx.events.EventPreferenceChange
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.BooleanKey
-import app.aaps.core.keys.Preferences
 import app.aaps.core.keys.StringKey
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.extensions.convertedToAbsolute
 import app.aaps.core.objects.extensions.plannedRemainingMinutes
 import app.aaps.core.utils.fabric.InstanceId
@@ -66,7 +66,7 @@ open class VirtualPumpPlugin @Inject constructor(
     private var fabricPrivacy: FabricPrivacy,
     rh: ResourceHelper,
     private val aapsSchedulers: AapsSchedulers,
-    private val preferences: Preferences,
+    preferences: Preferences,
     private val profileFunction: ProfileFunction,
     commandQueue: CommandQueue,
     private val pumpSync: PumpSync,
@@ -76,7 +76,7 @@ open class VirtualPumpPlugin @Inject constructor(
     private val persistenceLayer: PersistenceLayer,
     private val instantiator: Instantiator
 ) : PumpPluginBase(
-    PluginDescription()
+    pluginDescription = PluginDescription()
         .mainType(PluginType.PUMP)
         .fragmentClass(VirtualPumpFragment::class.java.name)
         .pluginIcon(app.aaps.core.objects.R.drawable.ic_virtual_pump)
@@ -85,8 +85,9 @@ open class VirtualPumpPlugin @Inject constructor(
         .preferencesId(PluginDescription.PREFERENCE_SCREEN)
         .description(R.string.description_pump_virtual)
         .setDefault()
-        .neverVisible(config.NSCLIENT),
-    aapsLogger, rh, commandQueue
+        .neverVisible(config.AAPSCLIENT),
+    ownPreferences = emptyList(),
+    aapsLogger, rh, preferences, commandQueue
 ), Pump, VirtualPump {
 
     private val disposable = CompositeDisposable()
@@ -134,7 +135,7 @@ open class VirtualPumpPlugin @Inject constructor(
     }
 
     override val isFakingTempsByExtendedBoluses: Boolean
-        get() = config.NSCLIENT && fakeDataDetected
+        get() = config.AAPSCLIENT && fakeDataDetected
     override var fakeDataDetected = false
 
     override fun loadTDDs(): PumpEnactResult { //no result, could read DB in the future?
@@ -175,7 +176,7 @@ open class VirtualPumpPlugin @Inject constructor(
 
     override val reservoirLevel: Double
         get() =
-            if (config.NSCLIENT) processedDeviceStatusData.pumpData?.reservoir ?: -1.0
+            if (config.AAPSCLIENT) processedDeviceStatusData.pumpData?.reservoir ?: -1.0
             else reservoirInUnits.toDouble()
 
     override val batteryLevel: Int
@@ -215,7 +216,7 @@ open class VirtualPumpPlugin @Inject constructor(
         rxBus.send(EventVirtualPumpUpdateGui())
         lastDataTime = System.currentTimeMillis()
         if (detailedBolusInfo.insulin > 0) {
-            if (config.NSCLIENT) // do not store pump serial (record will not be marked PH)
+            if (config.AAPSCLIENT) // do not store pump serial (record will not be marked PH)
                 disposable += persistenceLayer.insertOrUpdateBolus(
                     bolus = detailedBolusInfo.createBolus(),
                     action = Action.BOLUS,
@@ -364,6 +365,7 @@ open class VirtualPumpPlugin @Inject constructor(
             try {
                 extended.put("ActiveProfile", profileName)
             } catch (_: Exception) {
+                // ignore
             }
             val tb = persistenceLayer.getTemporaryBasalActiveAt(now)
             if (tb != null) {
@@ -389,7 +391,7 @@ open class VirtualPumpPlugin @Inject constructor(
         return pump
     }
 
-    override fun manufacturer(): ManufacturerType = pumpDescription.pumpType.manufacturer() ?: ManufacturerType.AAPS
+    override fun manufacturer(): ManufacturerType = pumpDescription.pumpType.manufacturer()
 
     override fun model(): PumpType = pumpDescription.pumpType
 

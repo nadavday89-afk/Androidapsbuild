@@ -17,8 +17,8 @@ import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventAAPSDirectorySelected
 import app.aaps.core.interfaces.rx.events.EventThemeSwitch
-import app.aaps.core.keys.Preferences
 import app.aaps.core.keys.StringKey
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.ui.locale.LocaleHelper
 import app.aaps.core.ui.toast.ToastUtils
 import app.aaps.plugins.configuration.maintenance.CustomWatchfaceFileContract
@@ -59,9 +59,11 @@ open class DaggerAppCompatActivityWithResult : DaggerAppCompatActivity() {
             }
         }
         callForPrefFile = registerForActivityResult(PrefsFileContract()) {
-            it?.let {
-                importExportPrefs.importSharedPreferences(this, it)
-            }
+            // Do not pass full file through intent. It crash on large file
+            // it?.let {
+            //     importExportPrefs.importSharedPreferences(this, it)
+            // }
+            importExportPrefs.doImportSharedPreferences(this)
         }
         callForCustomWatchfaceFile = registerForActivityResult(CustomWatchfaceFileContract()) { }
 
@@ -74,11 +76,12 @@ open class DaggerAppCompatActivityWithResult : DaggerAppCompatActivity() {
                 aapsLogger.info(LTag.CORE, "Permission ${it.key} ${it.value}")
                 when (it.key) {
                     Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION ->
+                    Manifest.permission.ACCESS_COARSE_LOCATION     ->
                         if (!it.value || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                             androidPermission.notifyForLocationPermissions(this)
                             ToastUtils.errorToast(this, getString(app.aaps.core.ui.R.string.location_permission_not_granted))
                         }
+
                     Manifest.permission.ACCESS_BACKGROUND_LOCATION ->
                         if (!it.value || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                             androidPermission.notifyForLocationPermissions(this)

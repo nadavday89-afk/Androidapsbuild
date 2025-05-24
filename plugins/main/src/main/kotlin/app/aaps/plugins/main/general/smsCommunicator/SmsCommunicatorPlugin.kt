@@ -25,6 +25,7 @@ import app.aaps.core.data.ue.Sources
 import app.aaps.core.data.ue.ValueWithUnit
 import app.aaps.core.interfaces.aps.Loop
 import app.aaps.core.interfaces.configuration.Config
+import app.aaps.core.interfaces.configuration.ConfigBuilder
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.iob.GlucoseStatusProvider
@@ -59,9 +60,9 @@ import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.IntentKey
-import app.aaps.core.keys.Preferences
 import app.aaps.core.keys.StringKey
 import app.aaps.core.keys.UnitDoubleKey
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.constraints.ConstraintObject
 import app.aaps.core.objects.extensions.generateCOBString
 import app.aaps.core.objects.extensions.round
@@ -116,7 +117,8 @@ class SmsCommunicatorPlugin @Inject constructor(
     private val uel: UserEntryLogger,
     private val glucoseStatusProvider: GlucoseStatusProvider,
     private val persistenceLayer: PersistenceLayer,
-    private val decimalFormatter: DecimalFormatter
+    private val decimalFormatter: DecimalFormatter,
+    private val configBuilder: ConfigBuilder
 ) : PluginBase(
     PluginDescription()
         .mainType(PluginType.GENERAL)
@@ -148,7 +150,8 @@ class SmsCommunicatorPlugin @Inject constructor(
         "TARGET" to "TARGET MEAL/ACTIVITY/HYPO/STOP",
         "SMS" to "SMS DISABLE/STOP",
         "CARBS" to "CARBS 12\nCARBS 12 23:05\nCARBS 12 11:05PM",
-        "HELP" to "HELP\nHELP command"
+        "HELP" to "HELP\nHELP command",
+        "RESTART" to "RESTART\nRestart AAPS"
     )
 
     override fun onStart() {
@@ -343,6 +346,11 @@ class SmsCommunicatorPlugin @Inject constructor(
 
                 "HELP"       ->
                     if (divided.size == 1 || divided.size == 2) processHELP(divided, receivedSms)
+                    else sendSMS(Sms(receivedSms.phoneNumber, rh.gs(R.string.wrong_format)))
+
+                "RESTART"    ->
+                    if (!remoteCommandsAllowed) sendSMS(Sms(receivedSms.phoneNumber, rh.gs(R.string.smscommunicator_remote_command_not_allowed)))
+                    else if (divided.size == 1) processRestart()
                     else sendSMS(Sms(receivedSms.phoneNumber, rh.gs(R.string.wrong_format)))
 
                 else         ->
@@ -558,6 +566,10 @@ class SmsCommunicatorPlugin @Inject constructor(
 
             else                                                                          -> sendSMS(Sms(receivedSms.phoneNumber, rh.gs(R.string.wrong_format)))
         }
+    }
+
+    private fun processRestart() {
+        configBuilder.exitApp("SMS", Sources.SMS, true)
     }
 
     private fun processPUMP(divided: Array<String>, receivedSms: Sms) {

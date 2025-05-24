@@ -38,7 +38,7 @@ import androidx.wear.tiles.TimelineBuilders.TimelineEntry
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.rx.weardata.EventData
 import app.aaps.core.keys.BooleanKey
-import app.aaps.core.keys.Preferences
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.wear.R
 import app.aaps.wear.comm.DataLayerListenerServiceWear
 import com.google.common.util.concurrent.ListenableFuture
@@ -63,7 +63,7 @@ interface TileSource {
 }
 
 open class Action(
-    val buttonText: String,
+    val buttonText: String? = null,
     val buttonTextSub: String? = null,
     val activityClass: String,
     @DrawableRes val iconRes: Int,
@@ -245,14 +245,20 @@ abstract class TileBase : TileService() {
         val iconSize = dp(circleDiameter * ICON_SIZE_FRACTION)
         val text = action.buttonText
         val textSub = action.buttonTextSub
+        val image = Image.Builder()
+            .setWidth(iconSize)
+            .setHeight(iconSize)
+            .setResourceId(action.iconRes.toString())
+            .build()
+
+        if (text == null && textSub == null) {
+            return image
+        }
+
         val col = Column.Builder()
-            .addContent(
-                Image.Builder()
-                    .setWidth(iconSize)
-                    .setHeight(iconSize)
-                    .setResourceId(action.iconRes.toString())
-                    .build()
-            ).addContent(
+            .addContent(image)
+        if (text != null) {
+            col.addContent(
                 Text.Builder()
                     .setText(text)
                     .setFontStyle(
@@ -264,6 +270,7 @@ abstract class TileBase : TileService() {
                     )
                     .build()
             )
+        }
         if (textSub != null) {
             col.addContent(
                 Text.Builder()

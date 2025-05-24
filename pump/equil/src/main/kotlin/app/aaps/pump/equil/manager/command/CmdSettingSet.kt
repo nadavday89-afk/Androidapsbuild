@@ -2,7 +2,7 @@ package app.aaps.pump.equil.manager.command
 
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
-import app.aaps.core.interfaces.sharedPreferences.SP
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.pump.equil.EquilConst
 import app.aaps.pump.equil.database.EquilHistoryRecord
 import app.aaps.pump.equil.manager.EquilManager
@@ -11,12 +11,12 @@ import app.aaps.pump.equil.manager.Utils
 class CmdSettingSet(
     maxBolus: Double? = null,
     aapsLogger: AAPSLogger,
-    sp: SP,
+    preferences: Preferences,
     equilManager: EquilManager
-) : BaseSetting(System.currentTimeMillis(), aapsLogger, sp, equilManager) {
+) : BaseSetting(System.currentTimeMillis(), aapsLogger, preferences, equilManager) {
 
     var lowAlarm: Double = 0.0
-    var bolusThresholdStep: Int = EquilConst.EQUIL_BLOUS_THRESHOLD_STEP
+    var bolusThresholdStep: Int = EquilConst.EQUIL_BOLUS_THRESHOLD_STEP
 
     init {
         maxBolus?.let { bolusThresholdStep = Utils.decodeSpeedToUH(maxBolus) }
@@ -27,12 +27,12 @@ class CmdSettingSet(
         val equilCmd = byteArrayOf(0x01, 0x05)
         val useTime = Utils.intToBytes(0)
         val autoCloseTime = Utils.intToBytes(0)
-        val lowAlarmByte = Utils.intToTwoBytes(bolusThresholdStep)
+        val lowAlarmByte = Utils.intToTwoBytes(1600)
         val fastBolus = Utils.intToTwoBytes(0)
         val occlusion = Utils.intToTwoBytes(2800)
         val insulinUnit = Utils.intToTwoBytes(8)
         val basalThreshold = Utils.intToTwoBytes(240)
-        val bolusThreshold = Utils.intToTwoBytes(1600)
+        val bolusThreshold = Utils.intToTwoBytes(bolusThresholdStep)
         val data = Utils.concat(
             indexByte, equilCmd, useTime, autoCloseTime,
             lowAlarmByte, fastBolus,

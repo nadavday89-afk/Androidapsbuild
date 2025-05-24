@@ -23,8 +23,8 @@ import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.utils.Round
-import app.aaps.core.keys.Preferences
 import app.aaps.core.keys.UnitDoubleKey
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.ui.toast.ToastUtils
 import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.DataPoint
@@ -246,9 +246,8 @@ import kotlin.math.max
         if (useForScale) {
             maxY = overviewData.maxVarSensValueFound
             minY = overviewData.minVarSensValueFound
-        } else {
-            overviewData.varSensScale.multiplier = maxY * scale / overviewData.maxVarSensValueFound
         }
+        overviewData.varSensScale.multiplier = maxY * scale / overviewData.maxVarSensValueFound
         addSeries(overviewData.varSensSeries as LineGraphSeries<ScaledDataPoint>)
     }
 
@@ -300,7 +299,7 @@ import kotlin.math.max
     fun addSteps(useForScale: Boolean, scale: Double) {
         val maxSteps = (overviewData.stepsCountGraphSeries as PointsWithLabelGraphSeries<DataPointWithLabelInterface>).highestValueY
         if (useForScale) {
-            minY = 30.0
+            minY = 0.0
             maxY = maxSteps
         }
         addSeries(overviewData.stepsCountGraphSeries as PointsWithLabelGraphSeries<DataPointWithLabelInterface>)

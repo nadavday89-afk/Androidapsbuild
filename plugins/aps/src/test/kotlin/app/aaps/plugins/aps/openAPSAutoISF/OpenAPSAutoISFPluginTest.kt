@@ -1,6 +1,5 @@
 package app.aaps.plugins.aps.openAPSAutoISF
 
-import android.content.SharedPreferences
 import app.aaps.core.data.aps.SMBDefaults
 import app.aaps.core.interfaces.aps.OapsProfileAutoIsf
 import app.aaps.core.interfaces.bgQualityCheck.BgQualityCheck
@@ -13,11 +12,6 @@ import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.DoubleKey
 import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.UnitDoubleKey
-import app.aaps.core.validators.preferences.AdaptiveDoublePreference
-import app.aaps.core.validators.preferences.AdaptiveIntPreference
-import app.aaps.core.validators.preferences.AdaptiveIntentPreference
-import app.aaps.core.validators.preferences.AdaptiveSwitchPreference
-import app.aaps.core.validators.preferences.AdaptiveUnitPreference
 import app.aaps.shared.tests.TestBaseWithProfile
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -31,41 +25,10 @@ class OpenAPSAutoISFPluginTest : TestBaseWithProfile() {
     @Mock lateinit var persistenceLayer: PersistenceLayer
     @Mock lateinit var glucoseStatusProvider: GlucoseStatusProvider
     @Mock lateinit var determineBasalSMB: DetermineBasalAutoISF
-    @Mock lateinit var sharedPrefs: SharedPreferences
     @Mock lateinit var bgQualityCheck: BgQualityCheck
     @Mock lateinit var profiler: Profiler
     @Mock lateinit var uiInteraction: UiInteraction
     private lateinit var openAPSAutoISFPlugin: OpenAPSAutoISFPlugin
-
-    init {
-        addInjector {
-            if (it is AdaptiveDoublePreference) {
-                it.profileUtil = profileUtil
-                it.preferences = preferences
-                it.sharedPrefs = sharedPrefs
-            }
-            if (it is AdaptiveIntPreference) {
-                it.profileUtil = profileUtil
-                it.preferences = preferences
-                it.sharedPrefs = sharedPrefs
-                it.config = config
-            }
-            if (it is AdaptiveIntentPreference) {
-                it.preferences = preferences
-                it.sharedPrefs = sharedPrefs
-            }
-            if (it is AdaptiveUnitPreference) {
-                it.profileUtil = profileUtil
-                it.preferences = preferences
-                it.sharedPrefs = sharedPrefs
-            }
-            if (it is AdaptiveSwitchPreference) {
-                it.preferences = preferences
-                it.sharedPrefs = sharedPrefs
-                it.config = config
-            }
-        }
-    }
 
     @BeforeEach fun prepare() {
         openAPSAutoISFPlugin = OpenAPSAutoISFPlugin(
@@ -121,7 +84,7 @@ class OpenAPSAutoISFPluginTest : TestBaseWithProfile() {
         `when`(preferences.get(DoubleKey.ApsAutoIsfSmbDeliveryRatio)).thenReturn(0.55)
         `when`(preferences.get(DoubleKey.ApsAutoIsfSmbDeliveryRatioMin)).thenReturn(0.4)
         `when`(preferences.get(DoubleKey.ApsAutoIsfSmbDeliveryRatioMax)).thenReturn(0.6)
-        `when`(preferences.get(UnitDoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange)).thenReturn(20.0)
+        `when`(preferences.get(DoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange)).thenReturn(20.0)
         //`when`(preferences.get(DoubleKey.ApsAutoIsfSmbMaxRangeExtension)).thenReturn(1.0)
 
         assertThat(openAPSAutoISFPlugin.determine_varSMBratio(100, 90.0, "fullLoop")).isEqualTo(0.55)
@@ -129,7 +92,7 @@ class OpenAPSAutoISFPluginTest : TestBaseWithProfile() {
         assertThat(openAPSAutoISFPlugin.determine_varSMBratio(100, 90.0, "enforced")).isEqualTo(0.5)
         assertThat(openAPSAutoISFPlugin.determine_varSMBratio(80, 90.0, "enforced")).isEqualTo(0.4)
         assertThat(openAPSAutoISFPlugin.determine_varSMBratio(180, 90.0, "enforced")).isEqualTo(0.6)
-        `when`(preferences.get(UnitDoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange)).thenReturn(0.0)
+        `when`(preferences.get(DoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange)).thenReturn(0.0)
         assertThat(openAPSAutoISFPlugin.determine_varSMBratio(180, 90.0, "enforced")).isEqualTo(0.55)
     }
 

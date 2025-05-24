@@ -26,7 +26,7 @@ import app.aaps.core.interfaces.logging.L
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.nsclient.NSAlarm
 import app.aaps.core.interfaces.nsclient.StoreDataForDb
-import app.aaps.core.interfaces.plugin.PluginBase
+import app.aaps.core.interfaces.plugin.PluginBaseWithPreferences
 import app.aaps.core.interfaces.plugin.PluginDescription
 import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.resources.ResourceHelper
@@ -43,7 +43,6 @@ import app.aaps.core.interfaces.rx.events.EventProfileSwitchChanged
 import app.aaps.core.interfaces.rx.events.EventSWSyncStatus
 import app.aaps.core.interfaces.rx.events.EventTempTargetChange
 import app.aaps.core.interfaces.rx.events.EventTherapyEventChange
-import app.aaps.core.interfaces.sharedPreferences.SP
 import app.aaps.core.interfaces.source.NSClientSource
 import app.aaps.core.interfaces.sync.DataSyncSelector
 import app.aaps.core.interfaces.sync.NsClient
@@ -52,9 +51,11 @@ import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.DecimalFormatter
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.BooleanKey
+import app.aaps.core.keys.BooleanNonKey
 import app.aaps.core.keys.IntKey
-import app.aaps.core.keys.Preferences
+import app.aaps.core.keys.LongNonKey
 import app.aaps.core.keys.StringKey
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.nssdk.NSAndroidClientImpl
 import app.aaps.core.nssdk.interfaces.NSAndroidClient
 import app.aaps.core.nssdk.remotemodel.LastModified
@@ -82,6 +83,9 @@ import app.aaps.plugins.sync.nsclientV3.extensions.toNSSvgV3
 import app.aaps.plugins.sync.nsclientV3.extensions.toNSTemporaryBasal
 import app.aaps.plugins.sync.nsclientV3.extensions.toNSTemporaryTarget
 import app.aaps.plugins.sync.nsclientV3.extensions.toNSTherapyEvent
+import app.aaps.plugins.sync.nsclientV3.keys.NsclientBooleanKey
+import app.aaps.plugins.sync.nsclientV3.keys.NsclientLongKey
+import app.aaps.plugins.sync.nsclientV3.keys.NsclientStringKey
 import app.aaps.plugins.sync.nsclientV3.services.NSClientV3Service
 import app.aaps.plugins.sync.nsclientV3.workers.DataSyncWorker
 import app.aaps.plugins.sync.nsclientV3.workers.LoadBgWorker
@@ -103,13 +107,12 @@ import javax.inject.Singleton
 @Singleton
 class NSClientV3Plugin @Inject constructor(
     aapsLogger: AAPSLogger,
+    rh: ResourceHelper,
+    preferences: Preferences,
     private val aapsSchedulers: AapsSchedulers,
     private val rxBus: RxBus,
-    rh: ResourceHelper,
     private val context: Context,
     private val fabricPrivacy: FabricPrivacy,
-    private val sp: SP,
-    private val preferences: Preferences,
     private val receiverDelegate: ReceiverDelegate,
     private val config: Config,
     private val dateUtil: DateUtil,
@@ -119,7 +122,7 @@ class NSClientV3Plugin @Inject constructor(
     private val storeDataForDb: StoreDataForDb,
     private val decimalFormatter: DecimalFormatter,
     private val l: L
-) : NsClient, Sync, PluginBase(
+) : NsClient, Sync, PluginBaseWithPreferences(
     PluginDescription()
         .mainType(PluginType.SYNC)
         .fragmentClass(NSClientFragment::class.java.name)
@@ -128,7 +131,8 @@ class NSClientV3Plugin @Inject constructor(
         .shortName(R.string.ns_client_v3_short_name)
         .preferencesId(PluginDescription.PREFERENCE_SCREEN)
         .description(R.string.description_ns_client_v3),
-    aapsLogger, rh
+    ownPreferences = listOf(NsclientBooleanKey::class.java, NsclientStringKey::class.java, NsclientLongKey::class.java),
+    aapsLogger, rh, preferences
 ) {
 
     @Suppress("PrivatePropertyName")
@@ -147,7 +151,7 @@ class NSClientV3Plugin @Inject constructor(
     override val status
         get() =
             when {
-                sp.getBoolean(R.string.key_ns_paused, false)                                          -> rh.gs(app.aaps.core.ui.R.string.paused)
+                preferences.get(NsclientBooleanKey.NsPaused)                                          -> rh.gs(app.aaps.core.ui.R.string.paused)
                 isAllowed.not()                                                                       -> blockingReason
                 preferences.get(BooleanKey.NsClient3UseWs) && nsClientV3Service?.wsConnected == true  -> "WS: " + rh.gs(app.aaps.core.interfaces.R.string.connected)
                 preferences.get(BooleanKey.NsClient3UseWs) && nsClientV3Service?.wsConnected == false -> "WS: " + rh.gs(R.string.not_connected)
@@ -172,6 +176,20 @@ class NSClientV3Plugin @Inject constructor(
     internal var firstLoadContinueTimestamp = LastModified(LastModified.Collections()) // timestamp of last fetched data for every collection during initial load
     internal var initialLoadFinished = false
 
+    private val fullSyncSemaphore = Object()
+
+    /**
+     * Set to true if full sync is requested from fragment.
+     * In this case we must enable accepting all data from NS even when disabled in preferences
+     */
+    private var fullSyncRequested: Boolean = false
+
+    /**
+     * Full sync is performed right now
+     */
+    var doingFullSync = false
+        private set
+
     private val serviceConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName) {
             aapsLogger.debug(LTag.NSCLIENT, "Service is disconnected")
@@ -189,12 +207,7 @@ class NSClientV3Plugin @Inject constructor(
         super.onStart()
         handler = Handler(HandlerThread(this::class.simpleName + "Handler").also { it.start() }.looper)
 
-        lastLoadedSrvModified = Json.decodeFromString(
-            sp.getString(
-                R.string.key_ns_client_v3_last_modified,
-                Json.encodeToString(LastModified.serializer(), LastModified(LastModified.Collections()))
-            )
-        )
+        lastLoadedSrvModified = Json.decodeFromString(preferences.get(NsclientStringKey.V3LastModified))
 
         setClient()
 
@@ -208,13 +221,14 @@ class NSClientV3Plugin @Inject constructor(
             .observeOn(aapsSchedulers.io)
             .subscribe({ ev ->
                            rxBus.send(EventNSClientNewLog("● CONNECTIVITY", ev.blockingReason))
-                           assert(nsClientV3Service != null)
-                           if (ev.connected) {
-                               when {
-                                   isAllowed && nsClientV3Service?.storageSocket == null  -> setClient() // socket must be created
-                                   !isAllowed && nsClientV3Service?.storageSocket != null -> stopService()
+                           nsClientV3Service?.let { service ->
+                               if (ev.connected) {
+                                   when {
+                                       isAllowed && service.storageSocket == null   -> setClient() // socket must be created
+                                       !isAllowed && service.storageSocket != null -> stopService()
+                                   }
+                                   if (isAllowed) executeLoop("CONNECTIVITY", forceNew = false)
                                }
-                               if (isAllowed) executeLoop("CONNECTIVITY", forceNew = false)
                            }
                            rxBus.send(EventNSClientUpdateGuiStatus())
                        }, fabricPrivacy::logException)
@@ -225,7 +239,7 @@ class NSClientV3Plugin @Inject constructor(
                            if (ev.isChanged(StringKey.NsClientAccessToken.key) ||
                                ev.isChanged(StringKey.NsClientUrl.key) ||
                                ev.isChanged(BooleanKey.NsClient3UseWs.key) ||
-                               ev.isChanged(rh.gs(R.string.key_ns_paused)) ||
+                               ev.isChanged(NsclientBooleanKey.NsPaused.key) ||
                                ev.isChanged(BooleanKey.NsClientNotificationsFromAlarms.key) ||
                                ev.isChanged(BooleanKey.NsClientNotificationsFromAnnouncements.key)
                            ) {
@@ -233,7 +247,7 @@ class NSClientV3Plugin @Inject constructor(
                                nsAndroidClient = null
                                setClient()
                            }
-                           if (ev.isChanged(rh.gs(app.aaps.core.utils.R.string.key_local_profile_last_change)))
+                           if (ev.isChanged(LongNonKey.LocalProfileLastChange.key))
                                executeUpload("PROFILE_CHANGE", forceNew = true)
 
                        }, fabricPrivacy::logException)
@@ -300,7 +314,7 @@ class NSClientV3Plugin @Inject constructor(
             handler?.post { executeLoop("REFRESH TOKEN", forceNew = true) }
             return
         }
-        if (config.NSCLIENT || nsClientSource.isEnabled()) {
+        if (config.AAPSCLIENT || nsClientSource.isEnabled()) {
             var origin = "5_MIN_AFTER_BG"
             var forceNew = true
             var toTime = lastLoadedSrvModified.collections.entries + T.mins(5).plus(T.secs(10)).msecs()
@@ -374,8 +388,8 @@ class NSClientV3Plugin @Inject constructor(
     }
 
     override fun pause(newState: Boolean) {
-        sp.putBoolean(R.string.key_ns_paused, newState)
-        rxBus.send(EventPreferenceChange(rh.gs(R.string.key_ns_paused)))
+        preferences.put(NsclientBooleanKey.NsPaused, newState)
+        rxBus.send(EventPreferenceChange(NsclientBooleanKey.NsPaused.key))
     }
 
     override fun detectedNsVersion(): String? = nsAndroidClient?.lastStatus?.version
@@ -404,6 +418,9 @@ class NSClientV3Plugin @Inject constructor(
         initialLoadFinished = false
         storeLastLoadedSrvModified()
         dataSyncSelectorV3.resetToNextFullSync()
+        synchronized(fullSyncSemaphore) {
+            fullSyncRequested = true
+        }
     }
 
     override fun handleClearAlarm(originalAlarm: NSAlarm, silenceTimeInMilliseconds: Long) {
@@ -473,7 +490,7 @@ class NSClientV3Plugin @Inject constructor(
                 result.identifier?.let {
                     dataPair.value.ids.nightscoutId = it
                     storeDataForDb.addToNsIdDeviceStatuses(dataPair.value)
-                    sp.putBoolean(app.aaps.core.utils.R.string.key_objectives_pump_status_is_available_in_ns, true)
+                    preferences.put(BooleanNonKey.ObjectivesPumpStatusIsAvailableInNS, true)
                 }
                 slowDown()
                 return true
@@ -711,12 +728,12 @@ class NSClientV3Plugin @Inject constructor(
         }
 
     fun storeLastLoadedSrvModified() {
-        sp.putString(R.string.key_ns_client_v3_last_modified, Json.encodeToString(LastModified.serializer(), lastLoadedSrvModified))
+        preferences.put(NsclientStringKey.V3LastModified, Json.encodeToString(LastModified.serializer(), lastLoadedSrvModified))
     }
 
     internal fun executeLoop(origin: String, forceNew: Boolean) {
         if (preferences.get(BooleanKey.NsClient3UseWs) && initialLoadFinished) return
-        if (sp.getBoolean(R.string.key_ns_paused, false)) {
+        if (preferences.get(NsclientBooleanKey.NsPaused)) {
             rxBus.send(EventNSClientNewLog("● RUN", "paused  $origin"))
             return
         }
@@ -731,6 +748,13 @@ class NSClientV3Plugin @Inject constructor(
             while (workIsRunning()) Thread.sleep(5000)
         }
         rxBus.send(EventNSClientNewLog("● RUN", "Starting next round $origin"))
+        synchronized(fullSyncSemaphore) {
+            if (fullSyncRequested) {
+                fullSyncRequested = false
+                doingFullSync = true
+                rxBus.send(EventNSClientNewLog("● RUN", "Full sync is requested"))
+            }
+        }
         rxBus.send(EventNSClientUpdateGuiStatus())
         WorkManager.getInstance(context)
             .beginUniqueWork(
@@ -748,8 +772,14 @@ class NSClientV3Plugin @Inject constructor(
             .enqueue()
     }
 
+    fun endFullSync() {
+        synchronized(fullSyncSemaphore) {
+            doingFullSync = false
+        }
+    }
+
     private fun executeUpload(origin: String, forceNew: Boolean) {
-        if (sp.getBoolean(R.string.key_ns_paused, false)) {
+        if (preferences.get(NsclientBooleanKey.NsPaused)) {
             rxBus.send(EventNSClientNewLog("● RUN", "paused"))
             return
         }

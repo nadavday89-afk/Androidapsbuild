@@ -21,12 +21,11 @@ import app.aaps.core.interfaces.logging.UserEntryLogger
 import app.aaps.core.interfaces.plugin.PluginDescription
 import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.resources.ResourceHelper
-import app.aaps.core.interfaces.sharedPreferences.SP
 import app.aaps.core.interfaces.source.BgSource
 import app.aaps.core.interfaces.source.DexcomBoyda
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.keys.BooleanKey
-import app.aaps.core.keys.Preferences
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.workflow.LoggingWorker
 import app.aaps.core.utils.receivers.DataWorkerStorage
 import app.aaps.plugins.source.activities.RequestDexcomPermissionActivity
@@ -56,7 +55,7 @@ class DexcomPlugin @Inject constructor(
 ), BgSource, DexcomBoyda {
 
     init {
-        if (!config.NSCLIENT) {
+        if (!config.AAPSCLIENT) {
             pluginDescription.setDefault()
         }
     }
@@ -76,7 +75,6 @@ class DexcomPlugin @Inject constructor(
 
         @Inject lateinit var injector: HasAndroidInjector
         @Inject lateinit var dexcomPlugin: DexcomPlugin
-        @Inject lateinit var sp: SP
         @Inject lateinit var preferences: Preferences
         @Inject lateinit var dateUtil: DateUtil
         @Inject lateinit var dataWorkerStorage: DataWorkerStorage
@@ -185,8 +183,15 @@ class DexcomPlugin @Inject constructor(
         }
     }
 
+    override fun dexcomPackages() = PACKAGE_NAMES
+
     companion object {
 
+        private val PACKAGE_NAMES = listOf(
+            "com.dexcom.g6.region1.mmol", "com.dexcom.g6.region2.mgdl",
+            "com.dexcom.g6.region3.mgdl", "com.dexcom.g6.region3.mmol",
+            "com.dexcom.g6", "com.dexcom.g7"
+        )
         const val PERMISSION = "com.dexcom.cgm.EXTERNAL_PERMISSION"
     }
 }

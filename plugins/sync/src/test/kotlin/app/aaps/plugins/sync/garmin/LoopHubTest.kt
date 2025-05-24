@@ -1,7 +1,6 @@
 package app.aaps.plugins.sync.garmin
 
 import app.aaps.core.data.iob.CobInfo
-import app.aaps.core.interfaces.aps.IobTotal
 import app.aaps.core.data.model.EPS
 import app.aaps.core.data.model.GV
 import app.aaps.core.data.model.GlucoseUnit
@@ -9,16 +8,18 @@ import app.aaps.core.data.model.HR
 import app.aaps.core.data.model.ICfg
 import app.aaps.core.data.model.OE
 import app.aaps.core.data.model.SourceSensor
+import app.aaps.core.data.model.TB
 import app.aaps.core.data.model.TE
 import app.aaps.core.data.model.TrendArrow
 import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
 import app.aaps.core.data.ue.ValueWithUnit
-import app.aaps.core.interfaces.aps.APSResult
+import app.aaps.core.interfaces.aps.IobTotal
 import app.aaps.core.interfaces.aps.Loop
 import app.aaps.core.interfaces.constraints.Constraint
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.db.PersistenceLayer
+import app.aaps.core.interfaces.db.ProcessedTbrEbData
 import app.aaps.core.interfaces.iob.IobCobCalculator
 import app.aaps.core.interfaces.logging.UserEntryLogger
 import app.aaps.core.interfaces.profile.Profile
@@ -26,9 +27,9 @@ import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.pump.DetailedBolusInfo
 import app.aaps.core.interfaces.queue.CommandQueue
-import app.aaps.core.keys.Preferences
 import app.aaps.core.keys.StringKey
 import app.aaps.core.keys.UnitDoubleKey
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.shared.tests.TestBase
 import io.reactivex.rxjava3.core.Single
 import org.junit.jupiter.api.AfterEach
@@ -63,6 +64,7 @@ class LoopHubTest : TestBase() {
     @Mock lateinit var persistenceLayer: PersistenceLayer
     @Mock lateinit var userEntryLogger: UserEntryLogger
     @Mock lateinit var preferences: Preferences
+    @Mock lateinit var processedTbrEbData: ProcessedTbrEbData
 
     private lateinit var loopHub: LoopHubImpl
     private val clock = Clock.fixed(Instant.ofEpochMilli(10_000), ZoneId.of("UTC"))
@@ -76,7 +78,7 @@ class LoopHubTest : TestBase() {
         }
         loopHub = LoopHubImpl(
             aapsLogger, commandQueue, constraints, iobCobCalculator, loop,
-            profileFunction, profileUtil, persistenceLayer, userEntryLogger, preferences
+            profileFunction, profileUtil, persistenceLayer, userEntryLogger, preferences, processedTbrEbData
         )
         loopHub.clock = clock
     }
@@ -92,7 +94,7 @@ class LoopHubTest : TestBase() {
         verifyNoMoreInteractions(userEntryLogger)
     }
 
-@Test
+    @Test
     fun testCurrentProfile() {
         val profile = mock<Profile>()
         whenever(profileFunction.getProfile()).thenReturn(profile)
@@ -204,19 +206,39 @@ class LoopHubTest : TestBase() {
 
     @Test
     fun testTemporaryBasal() {
-        val apsResult = mock<APSResult>()
-        whenever(apsResult.percent).thenReturn(45)
-        val lastRun = Loop.LastRun().apply { constraintsProcessed = apsResult }
-        whenever(loop.lastRun).thenReturn(lastRun)
+        val profile = mock<Profile>()
+        whenever(profileFunction.getProfile()).thenReturn(profile)
+        val tb = mock<TB> {
+            on { isAbsolute }.thenReturn(false)
+            on { rate }.thenReturn(45.0)
+        }
+        whenever(processedTbrEbData.getTempBasalIncludingConvertedExtended(clock.millis())).thenReturn(tb)
         assertEquals(0.45, loopHub.temporaryBasal, 1e-6)
-        verify(loop).lastRun
+        verify(profileFunction, times(1)).getProfile()
+    }
+
+    @Test
+    fun testTemporaryBasalAbsolute() {
+        val profile = mock<Profile> {
+            onGeneric { getBasal(clock.millis()) }.thenReturn(2.0)
+        }
+        whenever(profileFunction.getProfile()).thenReturn(profile)
+        val tb = mock<TB> {
+            on { isAbsolute }.thenReturn(true)
+            on { rate }.thenReturn(0.9)
+        }
+        whenever(processedTbrEbData.getTempBasalIncludingConvertedExtended(clock.millis())).thenReturn(tb)
+        assertEquals(0.45, loopHub.temporaryBasal, 1e-6)
+        verify(profileFunction, times(1)).getProfile()
     }
 
     @Test
     fun testTemporaryBasalNoRun() {
-        whenever(loop.lastRun).thenReturn(null)
+        val profile = mock<Profile>()
+        whenever(profileFunction.getProfile()).thenReturn(profile)
+        whenever(processedTbrEbData.getTempBasalIncludingConvertedExtended(clock.millis())).thenReturn(null)
         assertTrue(loopHub.temporaryBasal.isNaN())
-        verify(loop, times(1)).lastRun
+        verify(profileFunction, times(1)).getProfile()
     }
 
     @Test
@@ -290,7 +312,8 @@ class LoopHubTest : TestBase() {
             duration = samplingEnd.toEpochMilli() - samplingStart.toEpochMilli(),
             dateCreated = clock.millis(),
             beatsPerMinute = 101.0,
-            device = "Test Device")
+            device = "Test Device"
+        )
         whenever(persistenceLayer.insertOrUpdateHeartRate(hr)).thenReturn(
             Single.just(PersistenceLayer.TransactionResult())
         )

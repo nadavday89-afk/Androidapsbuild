@@ -36,13 +36,12 @@ import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventRefreshOverview
-import app.aaps.core.interfaces.sharedPreferences.SP
 import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.DecimalFormatter
 import app.aaps.core.interfaces.utils.Round
 import app.aaps.core.keys.BooleanKey
-import app.aaps.core.keys.Preferences
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.constraints.ConstraintObject
 import app.aaps.core.objects.extensions.formatColor
 import app.aaps.core.objects.extensions.highValueToUnitsToString
@@ -66,7 +65,6 @@ class BolusWizard @Inject constructor(
     @Inject lateinit var aapsLogger: AAPSLogger
     @Inject lateinit var rh: ResourceHelper
     @Inject lateinit var rxBus: RxBus
-    @Inject lateinit var sp: SP
     @Inject lateinit var preferences: Preferences
     @Inject lateinit var profileFunction: ProfileFunction
     @Inject lateinit var profileUtil: ProfileUtil
@@ -355,7 +353,7 @@ class BolusWizard @Inject constructor(
             actions.add(
                 rh.gs(app.aaps.core.ui.R.string.cobvsiob) + ": " + rh.gs(
                     app.aaps.core.ui.R.string.formatsignedinsulinunits,
-                    insulinFromBolusIOB + insulinFromBasalIOB + insulinFromCOB + insulinFromBG
+                    -insulinFromBolusIOB - insulinFromBasalIOB + insulinFromCOB + insulinFromBG
                 ).formatColor(
                     context, rh, app.aaps.core.ui.R.attr
                         .cobAlertColor
@@ -370,7 +368,7 @@ class BolusWizard @Inject constructor(
                 rh.gs(app.aaps.core.ui.R.string.bolus_constraint_applied_warn, calculatedTotalInsulin, insulinAfterConstraints)
                     .formatColor(context, rh, app.aaps.core.ui.R.attr.warningColor)
             )
-        if (config.NSCLIENT && insulinAfterConstraints > 0)
+        if (config.AAPSCLIENT && insulinAfterConstraints > 0)
             actions.add(rh.gs(app.aaps.core.ui.R.string.bolus_recorded_only).formatColor(context, rh, app.aaps.core.ui.R.attr.warningColor))
         if (useAlarm && !advisor && carbs > 0 && carbTime > 0)
             actions.add(rh.gs(app.aaps.core.ui.R.string.alarminxmin, carbTime).formatColor(context, rh, app.aaps.core.ui.R.attr.infoColor))
@@ -470,7 +468,7 @@ class BolusWizard @Inject constructor(
         }
         if (useCob) message += "\n" + rh.gs(app.aaps.core.ui.R.string.wizard_explain_cob, cob, insulinFromCOB)
         if (useBg) message += "\n" + rh.gs(app.aaps.core.ui.R.string.wizard_explain_bg, insulinFromBG)
-        if (includeBolusIOB) message += "\n" + rh.gs(app.aaps.core.ui.R.string.wizard_explain_iob, insulinFromBolusIOB + insulinFromBasalIOB)
+        if (includeBolusIOB) message += "\n" + rh.gs(app.aaps.core.ui.R.string.wizard_explain_iob, -insulinFromBolusIOB - insulinFromBasalIOB)
         if (useTrend) message += "\n" + rh.gs(app.aaps.core.ui.R.string.wizard_explain_trend, insulinFromTrend)
         if (useSuperBolus) message += "\n" + rh.gs(app.aaps.core.ui.R.string.wizard_explain_superbolus, insulinFromSuperBolus)
         if (percentageCorrection != 100) {
@@ -483,6 +481,7 @@ class BolusWizard @Inject constructor(
     private fun commonProcessing(ctx: Context, quickWizardEntry: QuickWizardEntry? = null) {
         val profile = profileFunction.getProfile() ?: return
         val pump = activePlugin.activePump
+        val now = dateUtil.now()
 
         val confirmMessage = confirmMessageAfterConstraints(ctx, advisor = false, quickWizardEntry)
         OKDialog.showConfirmation(ctx, rh.gs(app.aaps.core.ui.R.string.boluswizard), confirmMessage, {
@@ -518,7 +517,7 @@ class BolusWizard @Inject constructor(
                     context = ctx
                     mgdlGlucose = profileUtil.convertToMgdl(bg, profile.units)
                     glucoseType = TE.MeterType.MANUAL
-                    carbsTimestamp = dateUtil.now() + T.mins(this@BolusWizard.carbTime.toLong()).msecs()
+                    carbsTimestamp = now + T.mins(this@BolusWizard.carbTime.toLong()).msecs()
                     bolusCalculatorResult = createBolusCalculatorResult()
                     notes = this@BolusWizard.notes
                     if (insulin > 0 || carbs > 0) {
@@ -531,25 +530,24 @@ class BolusWizard @Inject constructor(
                             action = action,
                             source = if (quickWizard) Sources.QuickWizard else Sources.WizardDialog,
                             note = notes,
-                            listValues = listOf(
+                            listValues = listOfNotNull(
                                 ValueWithUnit.TEType(eventType),
                                 ValueWithUnit.Insulin(insulinAfterConstraints).takeIf { insulinAfterConstraints != 0.0 },
                                 ValueWithUnit.Gram(this@BolusWizard.carbs).takeIf { this@BolusWizard.carbs != 0 },
                                 ValueWithUnit.Minute(carbTime).takeIf { carbTime != 0 }
-                            ).filterNotNull()
+                            )
                         )
                         commandQueue.bolus(this, object : Callback() {
                             override fun run() {
                                 if (!result.success) {
                                     uiInteraction.runAlarm(result.comment, rh.gs(app.aaps.core.ui.R.string.treatmentdeliveryerror), app.aaps.core.ui.R.raw.boluserror)
+                                } else if (useAlarm && carbs > 0 && carbTime > 0) {
+                                    automation.scheduleTimeToEatReminder(T.mins(carbTime.toLong()).secs().toInt())
                                 }
                             }
                         })
                     }
                     bolusCalculatorResult?.let { persistenceLayer.insertOrUpdateBolusCalculatorResult(it).blockingGet() }
-                }
-                if (useAlarm && carbs > 0 && carbTime > 0) {
-                    automation.scheduleTimeToEatReminder(T.mins(carbTime.toLong()).secs().toInt())
                 }
             }
             if (quickWizardEntry != null) {

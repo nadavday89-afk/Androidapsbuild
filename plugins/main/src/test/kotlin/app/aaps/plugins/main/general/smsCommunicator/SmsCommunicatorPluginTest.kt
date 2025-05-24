@@ -1,6 +1,5 @@
 package app.aaps.plugins.main.general.smsCommunicator
 
-import android.content.SharedPreferences
 import android.telephony.SmsManager
 import app.aaps.core.data.aps.ApsMode
 import app.aaps.core.data.configuration.Constants
@@ -14,6 +13,7 @@ import app.aaps.core.data.model.TrendArrow
 import app.aaps.core.data.plugin.PluginType
 import app.aaps.core.interfaces.aps.AutosensDataStore
 import app.aaps.core.interfaces.aps.IobTotal
+import app.aaps.core.interfaces.configuration.ConfigBuilder
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.logging.UserEntryLogger
@@ -29,12 +29,6 @@ import app.aaps.core.keys.StringKey
 import app.aaps.core.keys.UnitDoubleKey
 import app.aaps.core.objects.constraints.ConstraintObject
 import app.aaps.core.objects.extensions.fromGv
-import app.aaps.core.validators.preferences.AdaptiveDoublePreference
-import app.aaps.core.validators.preferences.AdaptiveIntPreference
-import app.aaps.core.validators.preferences.AdaptiveIntentPreference
-import app.aaps.core.validators.preferences.AdaptiveStringPreference
-import app.aaps.core.validators.preferences.AdaptiveSwitchPreference
-import app.aaps.core.validators.preferences.AdaptiveUnitPreference
 import app.aaps.implementation.iob.GlucoseStatusProviderImpl
 import app.aaps.plugins.aps.loop.LoopPlugin
 import app.aaps.plugins.main.R
@@ -67,39 +61,10 @@ class SmsCommunicatorPluginTest : TestBaseWithProfile() {
     @Mock lateinit var dateUtilMocked: DateUtil
     @Mock lateinit var autosensDataStore: AutosensDataStore
     @Mock lateinit var smsManager: SmsManager
-    @Mock lateinit var sharedPrefs: SharedPreferences
+    @Mock lateinit var configBuilder: ConfigBuilder
 
     init {
         addInjector {
-            if (it is AdaptiveDoublePreference) {
-                it.profileUtil = profileUtil
-                it.preferences = preferences
-                it.sharedPrefs = sharedPrefs
-            }
-            if (it is AdaptiveIntPreference) {
-                it.profileUtil = profileUtil
-                it.preferences = preferences
-                it.sharedPrefs = sharedPrefs
-                it.config = config
-            }
-            if (it is AdaptiveUnitPreference) {
-                it.profileUtil = profileUtil
-                it.preferences = preferences
-                it.sharedPrefs = sharedPrefs
-            }
-            if (it is AdaptiveIntentPreference) {
-                it.preferences = preferences
-                it.sharedPrefs = sharedPrefs
-            }
-            if (it is AdaptiveStringPreference) {
-                it.preferences = preferences
-                it.sharedPrefs = sharedPrefs
-            }
-            if (it is AdaptiveSwitchPreference) {
-                it.preferences = preferences
-                it.sharedPrefs = sharedPrefs
-                it.config = config
-            }
             if (it is AuthRequest) {
                 it.aapsLogger = aapsLogger
                 it.smsCommunicator = smsCommunicatorPlugin
@@ -139,7 +104,7 @@ class SmsCommunicatorPluginTest : TestBaseWithProfile() {
             injector, aapsLogger, rh, smsManager, aapsSchedulers, preferences, constraintChecker, rxBus, profileFunction, profileUtil, fabricPrivacy, activePlugin, commandQueue,
             loop, iobCobCalculator, xDripBroadcast,
             otp, config, dateUtilMocked, uel,
-            glucoseStatusProvider, persistenceLayer, decimalFormatter
+            glucoseStatusProvider, persistenceLayer, decimalFormatter, configBuilder
         )
         smsCommunicatorPlugin.setPluginEnabled(PluginType.GENERAL, true)
         Mockito.doAnswer { invocation: InvocationOnMock ->
@@ -668,6 +633,12 @@ class SmsCommunicatorPluginTest : TestBaseWithProfile() {
         smsCommunicatorPlugin.processSms(Sms("1234", passCode))
         assertThat(smsCommunicatorPlugin.messages[2].text).isEqualTo(passCode)
         assertThat(smsCommunicatorPlugin.messages[3].text).isEqualTo("Pump disconnected")
+
+        //RESTART
+        smsCommunicatorPlugin.messages = ArrayList()
+        sms = Sms("1234", "RESTART")
+        smsCommunicatorPlugin.processSms(sms)
+        assertThat(smsCommunicatorPlugin.messages[0].text).isEqualTo("RESTART")
 
         //HELP
         smsCommunicatorPlugin.messages = ArrayList()

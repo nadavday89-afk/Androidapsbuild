@@ -22,7 +22,6 @@ import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
-import app.aaps.core.interfaces.sharedPreferences.SP
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.ui.activities.TranslatedDaggerAppCompatActivity
@@ -51,7 +50,6 @@ import kotlin.math.abs
 // IMPORTANT: This activity needs to be called from RileyLinkSelectPreference (see pref_medtronic.xml as example)
 class EquilHistoryRecordActivity : TranslatedDaggerAppCompatActivity() {
 
-    @Inject lateinit var sp: SP
     @Inject lateinit var blePreCheck: BlePreCheck
     @Inject lateinit var activePlugin: ActivePlugin
     @Inject lateinit var context: Context
@@ -386,7 +384,7 @@ class EquilHistoryRecordActivity : TranslatedDaggerAppCompatActivity() {
                         * Utils.decodeSpeedToUS(record.largeRate)
                 )
                 val t = (abs(time - time2) / 1000.0)
-                aapsLogger.debug(LTag.PUMPCOMM, "time===$t===$format3")
+//                aapsLogger.debug(LTag.PUMPCOMM, "time===$t===$format3")
                 arrayList.add(ItemModel(format2, format3, ItemModel.TYPE_BOLUS, time2))
                 record = null
             }
