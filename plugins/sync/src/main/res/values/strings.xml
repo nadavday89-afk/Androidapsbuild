@@ -110,7 +110,7 @@
     <string name="xdrip_local_broadcasts_title">Enable broadcasts to xDrip+.</string>
 
     <!--    DataBroadcast-->
-    <string name="tizen">External Companion App Broadcast</string>
+    <string name="tizen">External Companion Apps</string>
     <string name="tizen_short">CAB</string>
     <string name="tizen_description">Enables data broadcasting to various external companion apps</string>
 
