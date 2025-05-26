@@ -469,8 +469,10 @@ class AppRepository @Inject internal constructor(
         if (carbs.duration == 0L) {
             listOf(carbs)
         } else {
+            // Cap the duration at 10 hours (36,000,000 milliseconds) for calculations in case of invalid entry
+            val cappedDuration = carbs.duration.coerceAtMost(10 * 60 * 60 * 1000L)
             var remainingCarbs = carbs.amount
-            val ticks = (carbs.duration / 1000 / 60 / 15).coerceAtLeast(1L)
+            val ticks = (cappedDuration / 1000 / 60 / 15).coerceAtLeast(1L)
             (0 until ticks).map {
                 val carbTime = carbs.timestamp + it * 15 * 60 * 1000
                 val smallCarbAmount = (1.0 * remainingCarbs / (ticks - it)).roundToInt() //on last iteration (ticks-i) is 1 -> smallCarbAmount == remainingCarbs
