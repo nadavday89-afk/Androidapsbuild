@@ -170,7 +170,7 @@ class PreferencesImpl @Inject constructor(
         sp.putLong(key.composeKey(*arguments), value)
     }
 
-    override fun remove(key: LongComposedNonPreferenceKey, vararg arguments: Any) {
+    override fun remove(key: ComposedKey, vararg arguments: Any) {
         sp.remove(key.composeKey(*arguments))
     }
 
@@ -203,10 +203,6 @@ class PreferencesImpl @Inject constructor(
         sp.putBoolean(key.composeKey(*arguments), value)
     }
 
-    override fun remove(key: BooleanComposedNonPreferenceKey, vararg arguments: Any) {
-        sp.remove(key.composeKey(*arguments))
-    }
-
     override fun get(key: StringComposedNonPreferenceKey, vararg arguments: Any): String =
         sp.getString(key.composeKey(*arguments), key.defaultValue)
 
@@ -215,14 +211,6 @@ class PreferencesImpl @Inject constructor(
 
     override fun put(key: StringComposedNonPreferenceKey, vararg arguments: Any, value: String) {
         sp.putString(key.composeKey(*arguments), value)
-    }
-
-    override fun remove(key: StringComposedNonPreferenceKey, vararg arguments: Any) {
-        sp.remove(key.composeKey(*arguments))
-    }
-
-    override fun remove(key: DoubleComposedNonPreferenceKey, vararg arguments: Any) {
-        sp.remove(key.composeKey(*arguments))
     }
 
     override fun getDependingOn(key: String): List<PreferenceKey> =
