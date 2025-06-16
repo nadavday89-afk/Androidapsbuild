@@ -102,7 +102,7 @@
     <string name="sensitivity_label">Sensitivitets plugin</string>
     <string name="sensitivity_adjust">Sensitivitets plugin gjør det mulig for AAPS å gjøre midlertidige eller kortvarige justeringer av insulin sensitivitet (f. eks. hormonelle forandringer eller problemer med absorpsjon ved innstikkstedet).</string>
     <string name="sensitivity_edit">Sensitivitets plugin gir brukeren forslag til endringer i basaldoser, KH ratio og ISF som kan benyttes til å redigere profilen.</string>
-    <string name="sensitivity_cannula">Hvis du logger bytte av kanyle vil Autosens verdien tilbakestilles til 100%.</string>
+    <string name="sensitivity_cannula">Hvis du logger bytte av kanyle vil Autosens-verdien tilbakestilles til 100%.</string>
     <string name="sensitivity_time">Noen plugins har konfigurerbare tidsintervaller som kan settes av brukeren.</string>
     <string name="sensitivity_hint1">https://wiki.aaps.app/en/latest/DailyLifeWithAaps/SensitivityDetectionAndCob.html</string>
     <string name="sensitivity_hint2">https://wiki.aaps.app/en/latest/DailyLifeWithAaps/KeyAapsFeatures.html#autosens</string>
