@@ -136,7 +136,7 @@
     <string name="delete_current_profile">Slette gjeldende profil?</string>
     <string name="units_colon">Enheter:</string>
     <string name="missing_profile_name">Mangler profilnavn</string>
-    <string name="error_in_ic_values">Feil i IK-faktoren</string>
+    <string name="error_in_ic_values">Feil i IK-forholdstallet</string>
     <string name="error_in_basal_values">Feil i basalverdiene</string>
     <string name="error_in_target_values">Feil i BS målverdier</string>
     <string name="error_in_isf_values">Feil i ISF-verdien</string>
