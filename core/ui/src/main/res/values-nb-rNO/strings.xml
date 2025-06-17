@@ -74,7 +74,7 @@
     <string name="basal_label">Basal</string>
     <string name="target_label">Målverdi</string>
     <string name="dia_long_label">Insulinets virkningstid (DIA)</string>
-    <string name="ic_long_label">Insulin-karbohydratfaktor (IK)</string>
+    <string name="ic_long_label">Insulin-til-karbohydratforhold (IK)</string>
     <string name="isf_long_label">Insulinsensitivitetsfaktor (ISF)</string>
     <string name="basal_long_label">Basaldose</string>
     <string name="target_long_label">Blodsukkermål</string>
@@ -388,7 +388,7 @@
     <string name="profile_sensitivity_value">Profilens insulinfølsomhet</string>
     <string name="profile_max_daily_basal_value">Maksimal profil basalverdi</string>
     <string name="current_basal_value">Nåværende basalverdi</string>
-    <string name="profile_carbs_ratio_value">Profil karbohydratfaktor (IK)</string>
+    <string name="profile_carbs_ratio_value">Profilens insulin-til-karbohydratforhold (IK)</string>
     <string name="valuelimitedto">%1$.2f begrenset til %2$.2f</string>
     <string name="valueoutofrange">»%1$s« er utenfor lovlige grenseverdier</string>
     <string name="value_out_of_hard_limits">»%1$s« %2$.2f er utenfor lovlige grenseverdier</string>
