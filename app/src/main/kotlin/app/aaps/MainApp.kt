@@ -1,5 +1,6 @@
 package app.aaps
 
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.content.Intent
 import android.content.IntentFilter
@@ -12,10 +13,13 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import app.aaps.core.data.configuration.Constants
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.ICfg
+import app.aaps.core.data.model.RM
 import app.aaps.core.data.model.TE
 import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
+import app.aaps.core.data.ue.ValueWithUnit
 import app.aaps.core.interfaces.alerts.LocalAlertUtils
+import app.aaps.core.interfaces.aps.Loop
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.configuration.ConfigBuilder
 import app.aaps.core.interfaces.db.PersistenceLayer
@@ -23,6 +27,7 @@ import app.aaps.core.interfaces.insulin.Insulin
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.plugin.PluginBase
+import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.sharedPreferences.SP
 import app.aaps.core.interfaces.ui.UiInteraction
@@ -104,6 +109,8 @@ class MainApp : DaggerApplication() {
     @Inject lateinit var themeSwitcherPlugin: ThemeSwitcherPlugin
     @Inject lateinit var localAlertUtils: LocalAlertUtils
     @Inject lateinit var rh: Provider<ResourceHelper>
+    @Inject lateinit var loop: Loop
+    @Inject lateinit var profileFunction: ProfileFunction
 
     private var handler = Handler(HandlerThread(this::class.simpleName + "Handler").also { it.start() }.looper)
     private lateinit var refreshWidget: Runnable
@@ -398,6 +405,29 @@ class MainApp : DaggerApplication() {
                 }
                 sp.remove(key)
             }
+        }
+
+        // Migrate loop mode
+        if (config.APS && sp.contains("aps_mode")) {
+            val mode = when (sp.getString("aps_mode", "CLOSED")) {
+                "OPEN"   -> RM.Mode.OPEN_LOOP
+                "CLOSED" -> RM.Mode.CLOSED_LOOP
+                "LGS"    -> RM.Mode.CLOSED_LOOP_LGS
+                else     -> RM.Mode.CLOSED_LOOP
+            }
+            @SuppressLint("CheckResult")
+            persistenceLayer.insertOrUpdateRunningMode(
+                runningMode = RM(
+                    timestamp = dateUtil.now(),
+                    mode = mode,
+                    autoForced = false,
+                    duration = 0
+                ),
+                action = Action.CLOSED_LOOP_MODE,
+                source = Sources.Aaps,
+                listValues = listOf(ValueWithUnit.SimpleString("Migration"))
+            ).blockingGet()
+            sp.remove("aps_mode")
         }
         if (migrateInsulin) {
             val numOfProfiles = preferences.get(ProfileIntKey.AmountOfProfiles)
