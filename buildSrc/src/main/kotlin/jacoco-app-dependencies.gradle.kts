@@ -15,6 +15,10 @@ plugins {
     id("jacoco")
 }
 
+jacoco {
+    toolVersion = Versions.jacoco
+}
+
 private val limits = mutableMapOf(
     "instruction" to 0.0,
     "branch"      to 0.0,

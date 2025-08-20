@@ -1,3 +1,4 @@
+import gradle.kotlin.dsl.accessors._76aabd3b02f8f4907368aa15387c1ae4.jacoco
 import groovy.xml.XmlSlurper
 import groovy.xml.slurpersupport.NodeChild
 import java.io.File
@@ -13,6 +14,10 @@ import kotlin.math.roundToInt
 plugins {
     id("com.android.library")
     id("jacoco")
+}
+
+jacoco {
+    toolVersion = Versions.jacoco
 }
 
 private val limits = mutableMapOf(
