@@ -32,8 +32,8 @@ private val limits = mutableMapOf(
 extra.set("limits", limits)
 
 dependencies {
+    implementation("org.jacoco:org.jacoco.agent:${Versions.jacoco}")
     implementation("org.jacoco:org.jacoco.core:${Versions.jacoco}")
-    androidTestImplementation("org.jacoco:org.jacoco.core:${Versions.jacoco}")
 }
 
 project.afterEvaluate {

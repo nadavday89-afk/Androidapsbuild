@@ -1,3 +1,4 @@
+import gradle.kotlin.dsl.accessors._76aabd3b02f8f4907368aa15387c1ae4.implementation
 import gradle.kotlin.dsl.accessors._76aabd3b02f8f4907368aa15387c1ae4.jacoco
 import groovy.xml.XmlSlurper
 import groovy.xml.slurpersupport.NodeChild
@@ -32,8 +33,8 @@ private val limits = mutableMapOf(
 extra.set("limits", limits)
 
 dependencies {
+    implementation("org.jacoco:org.jacoco.agent:${Versions.jacoco}")
     implementation("org.jacoco:org.jacoco.core:${Versions.jacoco}")
-    androidTestImplementation("org.jacoco:org.jacoco.core:${Versions.jacoco}")
 }
 
 project.afterEvaluate {
