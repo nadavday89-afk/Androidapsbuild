@@ -12,4 +12,5 @@ android {
 
 dependencies {
     api(libs.androidx.core)
+    debugApi(libs.androidx.core)
 }

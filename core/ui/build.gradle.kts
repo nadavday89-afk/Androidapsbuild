@@ -13,6 +13,7 @@ android {
 
 dependencies {
     api(libs.androidx.core)
+    debugApi(libs.androidx.core)
     api(libs.androidx.appcompat)
     api(libs.androidx.preference)
     api(libs.androidx.gridlayout)

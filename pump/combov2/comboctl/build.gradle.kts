@@ -24,6 +24,7 @@ dependencies {
     api(libs.kotlinx.coroutines.core)
     api(libs.kotlinx.datetime)
     api(libs.androidx.core)
+    debugApi(libs.androidx.core)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.io.kotlintest.runner.junit5)

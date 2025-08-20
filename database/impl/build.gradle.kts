@@ -26,6 +26,7 @@ dependencies {
     api(libs.kotlin.stdlib.jdk8)
     api(libs.kotlin.reflect)
     api(libs.androidx.core)
+    debugApi(libs.androidx.core)
 
     api(libs.io.reactivex.rxjava3.rxandroid)
     api(libs.io.reactivex.rxjava3.rxkotlin)
