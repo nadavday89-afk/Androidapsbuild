@@ -143,6 +143,10 @@ android {
         dataBinding = true
         buildConfig = true
     }
+
+    testCoverage {
+        jacocoVersion = Versions.jacoco
+    }
 }
 
 allprojects {
