@@ -30,6 +30,10 @@ fun Project.androidTestImplementationFromCatalog(libName: String) {
     VersionCatalogHelper(this).dependency(libName, "androidTestImplementation")
 }
 
+fun Project.debugImplementationFromCatalog(libName: String) {
+    VersionCatalogHelper(this).dependency(libName, "debugImplementation")
+}
+
 fun Project.compileOnlyFromCatalog(libName: String) {
     VersionCatalogHelper(this).dependency(libName, "compileOnly")
 }

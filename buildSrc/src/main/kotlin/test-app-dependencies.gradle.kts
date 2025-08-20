@@ -17,7 +17,8 @@ dependencies {
     testImplementationFromCatalog("org-skyscreamer-jsonassert")
 
     androidTestImplementationFromCatalog("androidx-espresso-core")
-    androidTestImplementationFromCatalog("androidx-test-ext")
+    androidTestImplementationFromCatalog("androidx-test-ext-junit")
+    debugImplementationFromCatalog("androidx-test-core")
     androidTestImplementationFromCatalog("androidx-test-rules")
     androidTestImplementationFromCatalog("com-google-truth")
     androidTestImplementationFromCatalog("androidx-uiautomator")
