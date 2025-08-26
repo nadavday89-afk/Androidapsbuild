@@ -273,6 +273,7 @@ class AutotuneFragment : DaggerFragment() {
                                                       profileFunction.createProfileSwitch(
                                                           profileStore = it,
                                                           profileName = tunedP.profileName,
+                                                          iCfg = activePlugin.activeInsulin.iCfg,
                                                           durationInMinutes = 0,
                                                           percentage = 100,
                                                           timeShiftInHours = 0,

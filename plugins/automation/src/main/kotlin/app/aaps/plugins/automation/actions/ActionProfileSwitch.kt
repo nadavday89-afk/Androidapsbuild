@@ -57,6 +57,7 @@ class ActionProfileSwitch(injector: HasAndroidInjector) : Action(injector) {
         val result = profileFunction.createProfileSwitch(
             profileStore = profileStore,
             profileName = inputProfileName.value,
+            iCfg = activePlugin.activeInsulin.iCfg,
             durationInMinutes = 0,
             percentage = 100,
             timeShiftInHours = 0,

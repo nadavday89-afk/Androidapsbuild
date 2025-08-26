@@ -20,7 +20,7 @@ internal class ProfileStoreTest : TestBaseWithProfile() {
 
     @Test
     fun getDefaultProfileJsonTest() {
-        assertThat(getValidProfileStore().getDefaultProfileJson()?.has("dia")).isTrue()
+        assertThat(getValidProfileStore().getDefaultProfileJson()?.has("carbratio")).isTrue()
         assertThat(getInvalidProfileStore2().getDefaultProfileJson()).isNull()
     }
 

@@ -106,10 +106,6 @@ class ProfilePlugin @Inject constructor(
     fun isValidEditState(activity: FragmentActivity?): Boolean {
         val pumpDescription = activePlugin.activePump.pumpDescription
         with(profiles[currentProfileIndex]) {
-            if (dia < hardLimits.minDia() || dia > hardLimits.maxDia()) {
-                ToastUtils.errorToast(activity, rh.gs(app.aaps.core.ui.R.string.value_out_of_hard_limits, rh.gs(app.aaps.core.ui.R.string.profile_dia), dia))
-                return false
-            }
             if (name.isEmpty()) {
                 ToastUtils.errorToast(activity, rh.gs(R.string.missing_profile_name))
                 return false
@@ -171,7 +167,6 @@ class ProfilePlugin @Inject constructor(
     fun getEditedProfile(): PureProfile? {
         val profile = JSONObject()
         with(profiles[currentProfileIndex]) {
-            profile.put("dia", dia)
             profile.put("carbratio", ic)
             profile.put("sens", isf)
             profile.put("basal", basal)
@@ -190,7 +185,6 @@ class ProfilePlugin @Inject constructor(
             profiles[i].run {
                 preferences.put(ProfileComposedStringKey.LocalProfileNumberedName, i, value = name)
                 preferences.put(ProfileComposedBooleanKey.LocalProfileNumberedMgdl, i, value = mgdl)
-                preferences.put(ProfileComposedDoubleKey.LocalProfileNumberedDia, i, value = dia)
                 preferences.put(ProfileComposedStringKey.LocalProfileNumberedIc, i, value = ic.toString())
                 preferences.put(ProfileComposedStringKey.LocalProfileNumberedIsf, i, value = isf.toString())
                 preferences.put(ProfileComposedStringKey.LocalProfileNumberedBasal, i, value = basal.toString())
@@ -226,7 +220,6 @@ class ProfilePlugin @Inject constructor(
                     ProfileSource.SingleProfile(
                         name = name,
                         mgdl = preferences.get(ProfileComposedBooleanKey.LocalProfileNumberedMgdl, i),
-                        dia = preferences.get(ProfileComposedDoubleKey.LocalProfileNumberedDia, i),
                         ic = JSONArray(preferences.get(ProfileComposedStringKey.LocalProfileNumberedIc, i)),
                         isf = JSONArray(preferences.get(ProfileComposedStringKey.LocalProfileNumberedIsf, i)),
                         basal = JSONArray(preferences.get(ProfileComposedStringKey.LocalProfileNumberedBasal, i)),
@@ -289,7 +282,6 @@ class ProfilePlugin @Inject constructor(
         return ProfileSource.SingleProfile(
             name = verifiedName,
             mgdl = profile.units == GlucoseUnit.MGDL,
-            dia = pureJson.getDouble("dia"),
             ic = pureJson.getJSONArray("carbratio"),
             isf = pureJson.getJSONArray("sens"),
             basal = pureJson.getJSONArray("basal"),
@@ -359,7 +351,6 @@ class ProfilePlugin @Inject constructor(
             ProfileSource.SingleProfile(
                 name = Constants.LOCAL_PROFILE + free,
                 mgdl = profileFunction.getUnits() == GlucoseUnit.MGDL,
-                dia = Constants.defaultDIA,
                 ic = JSONArray(DEFAULT_ARRAY),
                 isf = JSONArray(DEFAULT_ARRAY),
                 basal = JSONArray(DEFAULT_ARRAY),
@@ -407,7 +398,6 @@ class ProfilePlugin @Inject constructor(
             for (i in 0 until numOfProfiles) {
                 profiles[i].run {
                     val profile = JSONObject()
-                    profile.put("dia", dia)
                     profile.put("carbratio", ic)
                     profile.put("sens", isf)
                     profile.put("basal", basal)

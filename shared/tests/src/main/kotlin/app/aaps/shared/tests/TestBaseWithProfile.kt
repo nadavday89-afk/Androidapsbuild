@@ -132,6 +132,7 @@ open class TestBaseWithProfile : TestBase() {
     private lateinit var invalidProfileJSON: String
     lateinit var preferenceManager: PreferenceManager
     lateinit var validProfile: ProfileSealed.Pure
+    lateinit var validProfile2: ProfileSealed.EPS
     lateinit var effectiveProfileSwitch: EPS
     lateinit var testPumpPlugin: TestPumpPlugin
 
@@ -141,10 +142,10 @@ open class TestBaseWithProfile : TestBase() {
 
     @BeforeEach
     fun prepareMock() {
-        validProfileJSON = "{\"dia\":\"5\",\"carbratio\":[{\"time\":\"00:00\",\"value\":\"30\"}],\"carbs_hr\":\"20\",\"delay\":\"20\",\"sens\":[{\"time\":\"00:00\",\"value\":\"3\"}," +
+        validProfileJSON = "{\"carbratio\":[{\"time\":\"00:00\",\"value\":\"30\"}],\"carbs_hr\":\"20\",\"delay\":\"20\",\"sens\":[{\"time\":\"00:00\",\"value\":\"3\"}," +
             "{\"time\":\"2:00\",\"value\":\"3.4\"}],\"timezone\":\"UTC\",\"basal\":[{\"time\":\"00:00\",\"value\":\"1\"}],\"target_low\":[{\"time\":\"00:00\",\"value\":\"4.5\"}]," +
             "\"target_high\":[{\"time\":\"00:00\",\"value\":\"7\"}],\"startDate\":\"1970-01-01T00:00:00.000Z\",\"units\":\"mmol\"}"
-        invalidProfileJSON = "{\"dia\":\"1\",\"carbratio\":[{\"time\":\"00:00\",\"value\":\"30\"}],\"carbs_hr\":\"20\",\"delay\":\"20\",\"sens\":[{\"time\":\"00:00\",\"value\":\"3\"}," +
+        invalidProfileJSON = "{\"carbratio\":[{\"time\":\"00:00\",\"value\":\"0\"}],\"carbs_hr\":\"20\",\"delay\":\"20\",\"sens\":[{\"time\":\"00:00\",\"value\":\"3\"}," +
             "{\"time\":\"2:00\",\"value\":\"3.4\"}],\"timezone\":\"UTC\",\"basal\":[{\"time\":\"00:00\",\"value\":\"1\"}],\"target_low\":[{\"time\":\"00:00\",\"value\":\"4.5\"}]," +
             "\"target_high\":[{\"time\":\"00:00\",\"value\":\"7\"}],\"startDate\":\"1970-01-01T00:00:00.000Z\",\"units\":\"mmol\"}"
         preferenceManager = PreferenceManager(context)
@@ -174,7 +175,11 @@ open class TestBaseWithProfile : TestBase() {
             originalPercentage = 100,
             originalDuration = 0,
             originalEnd = 0,
-            iCfg = ICfg("", 0, 0)
+            iCfg = ICfg("", 75, 7.0)
+        )
+        validProfile2 = ProfileSealed.EPS(
+            value = effectiveProfileSwitch,
+            activePlugin = activePlugin
         )
 
         Mockito.`when`(rh.gs(R.string.ok)).thenReturn("OK")

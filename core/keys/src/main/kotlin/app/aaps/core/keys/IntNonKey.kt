@@ -10,5 +10,7 @@ enum class IntNonKey(
 ) : IntNonPreferenceKey {
 
     ObjectivesManualEnacts("ObjectivesmanualEnacts", 0),
+    InsulinTemplate("insulin_template", 2),
+    InsulinOrefPeak("insulin_oref_peak", 75),
     RangeToDisplay("rangetodisplay", 6)
 }

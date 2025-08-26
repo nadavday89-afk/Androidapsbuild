@@ -281,8 +281,8 @@ open class OpenAPSSMBPlugin @Inject constructor(
 
         val insulin = activePlugin.activeInsulin
         dynIsfResult.insulinDivisor = when {
-            insulin.peak > 65 -> 55 // rapid peak: 75
-            insulin.peak > 50 -> 65 // ultra rapid peak: 55
+            insulin.iCfg.getPeak() > 65 -> 55 // rapid peak: 75
+            insulin.iCfg.getPeak() > 50 -> 65 // ultra rapid peak: 55
             else              -> 75 // lyumjev peak: 45
         }
 
@@ -321,7 +321,7 @@ open class OpenAPSSMBPlugin @Inject constructor(
 
         val inputConstraints = ConstraintObject(0.0, aapsLogger) // fake. only for collecting all results
 
-        if (!hardLimits.checkHardLimits(profile.dia, app.aaps.core.ui.R.string.profile_dia, hardLimits.minDia(), hardLimits.maxDia())) return
+        if (!hardLimits.checkHardLimits(profile.iCfg().getDia(), app.aaps.core.ui.R.string.profile_dia, hardLimits.minDia(), hardLimits.maxDia())) return
         if (!hardLimits.checkHardLimits(
                 profile.getIcTimeFromMidnight(MidnightUtils.secondsFromMidnight()),
                 app.aaps.core.ui.R.string.profile_carbs_ratio_value,

@@ -1,6 +1,7 @@
 package app.aaps.core.interfaces.profile
 
 import app.aaps.core.data.model.GlucoseUnit
+import app.aaps.core.data.model.ICfg
 import app.aaps.core.data.model.PS
 import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
@@ -62,19 +63,21 @@ interface ProfileFunction {
      *
      * @param profileStore  ProfileStore to use
      * @param profileName   this profile from profile store
+     * @param iCfg          insulinConfiguration
      * @param durationInMinutes
      * @param percentage        100 = no modification
      * @param timeShiftInHours  0 = no modification
      * @param timestamp         expected time
      * @return null if profile cannot be created from profile store
      */
-    fun buildProfileSwitch(profileStore: ProfileStore, profileName: String, durationInMinutes: Int, percentage: Int, timeShiftInHours: Int, timestamp: Long): PS?
+    fun buildProfileSwitch(profileStore: ProfileStore, profileName: String, iCfg: ICfg, durationInMinutes: Int, percentage: Int, timeShiftInHours: Int, timestamp: Long): PS?
 
     /**
      * Create a new circadian profile switch request based on provided profile
      *
      * @param profileStore  ProfileStore to use
      * @param profileName   this profile from profile store
+     * @param iCfg          insulinConfiguration
      * @param durationInMinutes
      * @param percentage        100 = no modification
      * @param timeShiftInHours  0 = no modification
@@ -86,7 +89,7 @@ interface ProfileFunction {
      * @return true if profile was created from store
      */
     fun createProfileSwitch(
-        profileStore: ProfileStore, profileName: String, durationInMinutes: Int, percentage: Int, timeShiftInHours: Int, timestamp: Long,
+        profileStore: ProfileStore, profileName: String, iCfg: ICfg, durationInMinutes: Int, percentage: Int, timeShiftInHours: Int, timestamp: Long,
         action: Action, source: Sources, note: String? = null, listValues: List<ValueWithUnit>
     ): Boolean
 
@@ -103,7 +106,7 @@ interface ProfileFunction {
      * @return true if profile switch is created
      */
     fun createProfileSwitch(
-        durationInMinutes: Int, percentage: Int, timeShiftInHours: Int,
+        iCfg: ICfg, durationInMinutes: Int, percentage: Int, timeShiftInHours: Int,
         action: Action, source: Sources, note: String? = null, listValues: List<ValueWithUnit>
     ): Boolean
 }

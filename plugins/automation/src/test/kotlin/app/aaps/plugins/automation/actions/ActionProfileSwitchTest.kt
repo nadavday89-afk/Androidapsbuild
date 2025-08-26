@@ -1,5 +1,7 @@
 package app.aaps.plugins.automation.actions
 
+import app.aaps.core.data.model.ICfg
+import app.aaps.core.interfaces.insulin.Insulin
 import app.aaps.core.interfaces.queue.Callback
 import app.aaps.plugins.automation.R
 import app.aaps.plugins.automation.elements.InputProfileName
@@ -7,6 +9,7 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyLong
+import org.mockito.Mock
 import org.mockito.Mockito
 import org.mockito.Mockito.anyInt
 import org.mockito.Mockito.anyString
@@ -19,6 +22,7 @@ private const val STRING_JSON = """{"data":{"profileToSwitchTo":"Test"},"type":"
 class ActionProfileSwitchTest : ActionsTestBase() {
 
     private lateinit var sut: ActionProfileSwitch
+    @Mock lateinit var activeInsulin: Insulin
 
     @BeforeEach fun setUp() {
         `when`(rh.gs(R.string.profilename)).thenReturn("Change profile to")
@@ -27,7 +31,6 @@ class ActionProfileSwitchTest : ActionsTestBase() {
         `when`(rh.gs(app.aaps.core.ui.R.string.notexists)).thenReturn("not exists")
         `when`(rh.gs(app.aaps.core.validators.R.string.error_field_must_not_be_empty)).thenReturn("The field must not be empty")
         `when`(rh.gs(app.aaps.core.ui.R.string.noprofile)).thenReturn("No profile loaded from NS yet")
-
         sut = ActionProfileSwitch(injector)
     }
 
@@ -81,7 +84,9 @@ class ActionProfileSwitchTest : ActionsTestBase() {
 
         // do profile switch
         `when`(profileFunction.getProfileName()).thenReturn("Test")
-        `when`(profileFunction.createProfileSwitch(anyObject(), anyString(), anyInt(), anyInt(), anyInt(), anyLong(), any(), any(), any(), any())).thenReturn(true)
+        `when`(activePlugin.activeInsulin).thenReturn(activeInsulin)
+        `when`(activePlugin.activeInsulin.iCfg).thenReturn(ICfg("Test",45,7.0))
+        `when`(profileFunction.createProfileSwitch(anyObject(), anyString(),anyObject(),  anyInt(), anyInt(), anyInt(), anyLong(), any(), any(), any(), any())).thenReturn(true)
         sut.inputProfileName = InputProfileName(rh, activePlugin, TESTPROFILENAME)
         sut.doAction(object : Callback() {
             override fun run() {
@@ -89,7 +94,7 @@ class ActionProfileSwitchTest : ActionsTestBase() {
                 assertThat(result.comment).isEqualTo("OK")
             }
         })
-        Mockito.verify(profileFunction, Mockito.times(1)).createProfileSwitch(anyObject(), anyString(), anyInt(), anyInt(), anyInt(), anyLong(), any(), any(), any(), any())
+        Mockito.verify(profileFunction, Mockito.times(1)).createProfileSwitch(anyObject(), anyString(),anyObject(),  anyInt(), anyInt(), anyInt(), anyLong(), any(), any(), any(), any())
     }
 
     @Test fun hasDialogTest() {

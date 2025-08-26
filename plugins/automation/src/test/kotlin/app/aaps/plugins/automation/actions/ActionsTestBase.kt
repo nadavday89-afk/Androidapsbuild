@@ -47,6 +47,7 @@ ActionsTestBase : TestBaseWithProfile() {
                 it.dateUtil = dateUtil
             }
             if (it is ActionProfileSwitchPercent) {
+                it.activePlugin = activePlugin
                 it.profileFunction = profileFunction
             }
             if (it is ActionNotification) {

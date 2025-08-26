@@ -5,6 +5,7 @@ import app.aaps.core.data.configuration.Constants
 import app.aaps.core.data.iob.CobInfo
 import app.aaps.core.data.iob.InMemoryGlucoseValue
 import app.aaps.core.data.model.GV
+import app.aaps.core.data.model.ICfg
 import app.aaps.core.data.model.RM
 import app.aaps.core.data.model.SourceSensor
 import app.aaps.core.data.model.TT
@@ -15,6 +16,7 @@ import app.aaps.core.interfaces.aps.IobTotal
 import app.aaps.core.interfaces.configuration.ConfigBuilder
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.db.PersistenceLayer
+import app.aaps.core.interfaces.insulin.Insulin
 import app.aaps.core.interfaces.logging.UserEntryLogger
 import app.aaps.core.interfaces.profile.ProfileSource
 import app.aaps.core.interfaces.queue.Callback
@@ -61,6 +63,7 @@ class SmsCommunicatorPluginTest : TestBaseWithProfile() {
     @Mock lateinit var autosensDataStore: AutosensDataStore
     @Mock lateinit var smsManager: SmsManager
     @Mock lateinit var configBuilder: ConfigBuilder
+    @Mock lateinit var activeInsulin: Insulin
 
     init {
         addInjector {
@@ -733,6 +736,7 @@ class SmsCommunicatorPluginTest : TestBaseWithProfile() {
             profileFunction.createProfileSwitch(
                 anyObject(),
                 Mockito.anyString(),
+                anyObject(),
                 Mockito.anyInt(),
                 Mockito.anyInt(),
                 Mockito.anyInt(),
@@ -743,6 +747,8 @@ class SmsCommunicatorPluginTest : TestBaseWithProfile() {
                 anyObject()
             )
         ).thenReturn(true)
+        `when`(activePlugin.activeInsulin).thenReturn(activeInsulin)
+        `when`(activePlugin.activeInsulin.iCfg).thenReturn(ICfg("Test",45,7.0))
         smsCommunicatorPlugin.messages = ArrayList()
         sms = Sms("1234", "PROFILE 1 90")
         smsCommunicatorPlugin.processSms(sms)

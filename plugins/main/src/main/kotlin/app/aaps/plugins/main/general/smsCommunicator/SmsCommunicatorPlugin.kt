@@ -688,6 +688,7 @@ class SmsCommunicatorPlugin @Inject constructor(
                             if (profileFunction.createProfileSwitch(
                                     profileStore = store,
                                     profileName = list[pIndex - 1] as String,
+                                    iCfg = activePlugin.activeInsulin.iCfg,
                                     durationInMinutes = 0,
                                     percentage = finalPercentage,
                                     timeShiftInHours = 0,
