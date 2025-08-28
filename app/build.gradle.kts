@@ -1,4 +1,3 @@
-import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -191,10 +190,10 @@ dependencies {
     implementation(project(":pump:equil"))
     implementation(project(":pump:insight"))
     implementation(project(":pump:medtronic"))
-    implementation(project(":pump:pump-common"))
-    implementation(project(":pump:omnipod-common"))
-    implementation(project(":pump:omnipod-eros"))
-    implementation(project(":pump:omnipod-dash"))
+    implementation(project(":pump:common"))
+    implementation(project(":pump:omnipod:common"))
+    implementation(project(":pump:omnipod:eros"))
+    implementation(project(":pump:omnipod:dash"))
     implementation(project(":pump:rileylink"))
     implementation(project(":pump:virtual"))
     implementation(project(":workflow"))
